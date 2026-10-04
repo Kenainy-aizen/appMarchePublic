@@ -1,0 +1,32 @@
+:root {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #1f2933;
+  background: #f5f7fa;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.subtitle {
+  color: #52606d;
+}
+
+.status {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #e3f9e5;
+  color: #1c4532;
+}
+
+.status--error {
+  background: #ffe3e3;
+  color: #8a1c1c;
+}
