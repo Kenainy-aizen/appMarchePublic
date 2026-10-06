@@ -5,5 +5,8 @@ export interface IdGenerator {
 
 /** Horloge injectable pour garder les cas d'utilisation testables. */
 export interface Clock {
+  /** Date du jour au format AAAA-MM-JJ. */
   today(): string
+  /** Instant courant en millisecondes (pour les délais, pas pour les dates métier). */
+  nowMs(): number
 }

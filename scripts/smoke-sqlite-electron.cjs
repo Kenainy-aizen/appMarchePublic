@@ -14,13 +14,13 @@ try {
   const key = Buffer.alloc(32, 5)
   const db = new Database(file)
   db.pragma("cipher='sqlcipher'")
-  db.key(key)
+  db.pragma(`key = "x'${key.toString('hex')}'"`)
   db.exec("CREATE TABLE t (x TEXT NOT NULL) STRICT; INSERT INTO t VALUES ('ok')")
   db.close()
 
   const reopened = new Database(file)
   reopened.pragma("cipher='sqlcipher'")
-  reopened.key(key)
+  reopened.pragma(`key = "x'${key.toString('hex')}'"`)
   const value = reopened.prepare('SELECT x FROM t').get().x
   reopened.close()
 
@@ -28,7 +28,7 @@ try {
   try {
     const bad = new Database(file)
     bad.pragma("cipher='sqlcipher'")
-    bad.key(Buffer.alloc(32, 6))
+    bad.pragma(`key = "x'${Buffer.alloc(32, 6).toString('hex')}'"`)
     bad.prepare('SELECT x FROM t').get()
   } catch {
     wrongKeyRejected = true

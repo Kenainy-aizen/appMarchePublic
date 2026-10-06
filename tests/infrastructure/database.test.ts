@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import Database from 'better-sqlite3-multiple-ciphers'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { openDatabase } from '@infrastructure/sqlite/database'
@@ -41,5 +42,19 @@ describe('base chiffrée', () => {
 
   it('refuse une ouverture sans clé', () => {
     expect(() => openDatabase(file)).toThrow(DatabaseAccessError)
+  })
+
+  it('refuse une clé qui ne fait pas 32 octets', () => {
+    expect(() => openDatabase(file, { key: Buffer.alloc(16, 7) })).toThrow(DatabaseAccessError)
+  })
+
+  it('utilise la clé BRUTE (sans dérivation lente) : le format est figé (ADR-022)', () => {
+    // Si quelqu'un repasse la clé comme « phrase de passe », ce fichier ne s'ouvrira plus avec la clé brute :
+    // chaque ouverture redeviendrait lente (PBKDF2) et les bases existantes deviendraient illisibles.
+    const raw = new Database(file)
+    raw.pragma("cipher='sqlcipher'")
+    raw.pragma(`key = "x'${goodKey.toString('hex')}'"`)
+    expect(raw.prepare('SELECT texte FROM note').all()).toEqual([{ texte: 'confidentiel' }])
+    raw.close()
   })
 })
