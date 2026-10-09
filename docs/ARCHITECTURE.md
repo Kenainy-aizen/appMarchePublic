@@ -1,12 +1,12 @@
 # ARCHITECTURE
 
-> Document vivant, complété à chaque phase. État : fin de Phase 2.
+> Document vivant, complété à chaque phase. État : fin de Phase 3.
 
 ## 1. Principes
 
 - Architecture propre / hexagonale : presentation -> application -> domain <- infrastructure.
 - Le domaine est en TypeScript pur, sans dépendance à Electron, React ni SQLite.
-- Le contexte « région courante » vivra uniquement dans le processus principal Electron (Phase 3).
+- Le contexte « région courante » vit uniquement dans le processus principal Electron (`RegionSession`, voir section 9).
 
 ## 2. Structure réelle
 
@@ -23,7 +23,7 @@
       repositories.ts            ports : PpmRepository, ProcedureRepository, CandidateRepository, ContractRepository
       app-info.ts                (squelette Phase 1)
 
-    src/application/             get-app-info.ts (squelette ; les vrais cas d'utilisation arrivent dès la Phase 3)
+    src/application/             ports, session de région, limiteur d'essais, cas d'utilisation des régions (voir section 9)
 
     src/infrastructure/
       sqlite/database.ts         openDatabase(path, { key? }) : chiffrement SQLCipher, contrôle de la clé
@@ -34,11 +34,11 @@
       sqlite/row-mapping.ts      aides de lecture (JSON, identifiants)
       electron-app-info-provider.ts   (squelette Phase 1)
 
-    src/main/                    index.ts (composition root), window.ts, security.ts, ipc/register-handlers.ts
+    src/main/                    index.ts (composition root), window.ts, security.ts, ipc/register-handlers.ts, ipc/safe-handler.ts
     src/preload/index.ts         contextBridge -> window.api (importe uniquement electron)
     src/renderer/                React (aucune logique métier)
-    tests/                       domain/, application/, infrastructure/
-    scripts/                     smoke-sqlite.mjs (+ .cjs) : module SQLite sous Electron
+    tests/                       domain/, application/, infrastructure/, integration/, renderer/
+    scripts/                     smoke-sqlite.mjs (+ .cjs) : module SQLite sous Electron ; e2e-electron.mjs : application complète
 
 Alias : @domain, @application, @infrastructure, @shared (tsconfig, electron-vite, Vitest).
 
@@ -65,10 +65,10 @@ Aucune colonne « région » : chaque région a son propre fichier (ADR-003). Mo
 
 ## 5. Cloisonnement par région
 
-- Un fichier SQLite par région, chiffré avec une clé dérivée du mot de passe de la région (Phase 3).
+- Un fichier SQLite par région, chiffré avec une clé de données aléatoire, elle-même protégée par le mot de passe de la région et par la clé de récupération (chiffrement « par enveloppe », ADR-015). La clé de données est transmise brute à SQLCipher (ADR-022).
 - `openDatabase` détecte une clé fausse ou absente (`DatabaseAccessError`) ; testé.
-- React ne manipulera jamais chemin de fichier, clé ni connexion.
-- Les tests d'isolation entre régions seront écrits en Phase 3.
+- React ne manipule jamais chemin de fichier, clé ni connexion.
+- Les tests d'isolation entre régions existent (`tests/integration/`, vrais fichiers chiffrés) ainsi qu'un test de bout en bout (`npm run e2e`).
 
 ## 6. Règles d'architecture (vérifiées par `npm run lint`)
 
@@ -86,3 +86,49 @@ Faire évoluer le schéma : ne JAMAIS modifier une migration existante. Créer `
 ## 8. Sécurité Electron
 
 contextIsolation activé, nodeIntegration désactivé, sandbox, CSP stricte, IPC validé par Zod, aucun accès réseau sortant.
+
+## 9. Phase 3 — Régions et authentification
+
+### Fichiers
+
+    src/domain/region.ts                       MAX_REGIONS (3), RegionSummary, validation du nom et du mot de passe, nom suggéré
+    src/application/ports.ts                   RegionKeyService, RegionRegistry, RegionStorage, RegionWorkspace, RegionSecrets
+    src/application/region-session.ts          RegionSession : l'UNIQUE région ouverte ; requireWorkspace()
+    src/application/login-throttle.ts          LoginThrottle (ADR-017)
+    src/application/regions/                   create-region, open-region, list-regions, close-and-get-session
+    src/infrastructure/crypto/                 scrypt-key-service.ts (enveloppe de clés), base32.ts
+    src/infrastructure/json-region-registry.ts registre `regions.json`
+    src/infrastructure/sqlite/region-storage.ts  une base chiffrée par région
+    src/infrastructure/system-ports.ts         SystemClock, UuidGenerator
+    src/main/ipc/safe-handler.ts               runSafely : toute issue devient un ApiResult
+    src/renderer/src/screens/                  CreateRegionScreen, LoginScreen, RecoveryKeyScreen, HomeScreen
+    tests/integration/                         isolation entre régions sur de vrais fichiers chiffrés
+    tests/renderer/                            parcours des écrans (jsdom)
+    scripts/e2e-electron.mjs                   test de bout en bout de la vraie application
+
+### Dossier de données (Windows : `%APPDATA%\prmp-suivi-marches`, ou `PRMP_DATA_DIR`)
+
+    regions.json            registre : noms, dates, clés enveloppées (aucun secret exploitable seul)
+    regions/<id>.sqlite     une base chiffrée par région (<id> = identifiant aléatoire)
+
+### Canaux IPC de la Phase 3
+
+| Canal            | Entrée                          | Résultat (`ApiResult`)                        |
+| ---------------- | ------------------------------- | --------------------------------------------- |
+| regions:overview | —                               | régions, `canCreate`, `suggestedName`         |
+| regions:create   | nom, mot de passe, confirmation | région + clé de récupération (une seule fois) |
+| session:open     | `regionId`, mot de passe        | région ouverte                                |
+| session:close    | —                               | null                                          |
+| session:get      | —                               | région ouverte ou null                        |
+
+### Flux d'ouverture d'une région
+
+mot de passe -> scrypt -> clé qui déchiffre l'enveloppe -> clé de données (DEK) -> ouverture SQLCipher -> migrations -> dépôts exposés par `RegionSession`. La DEK est effacée de la mémoire dès l'ouverture (best effort).
+
+### Garanties vérifiées par des tests
+
+- Chaque région ne voit que ses propres données ; le mot de passe d'une région n'ouvre pas une autre région ; la clé d'une région ne déchiffre pas le fichier d'une autre.
+- Après déconnexion, plus aucun accès aux données (base fermée, `NO_ACTIVE_REGION`).
+- Aucune donnée ni aucun secret lisible dans les fichiers du dossier de données.
+- Fichier de données manquant, endommagé ou plus récent que l'application : messages clairs, sans rien exposer.
+- Échec de création : aucune entrée de registre et fichier de données nettoyé.

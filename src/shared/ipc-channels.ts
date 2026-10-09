@@ -3,5 +3,10 @@
  * Ce fichier ne doit importer AUCUNE bibliothèque : il est embarqué dans le preload sandboxé.
  */
 export const IpcChannels = {
-  appGetInfo: 'app:get-info'
+  appGetInfo: 'app:get-info',
+  regionsOverview: 'regions:overview',
+  regionsCreate: 'regions:create',
+  sessionOpen: 'session:open',
+  sessionClose: 'session:close',
+  sessionGet: 'session:get'
 } as const

@@ -1,6 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "lib": ["ES2022"], "types": ["node"] },
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
   "include": [
     "electron.vite.config.ts",
     "vitest.config.ts",
@@ -11,5 +14,6 @@
     "src/infrastructure/**/*",
     "src/shared/**/*",
     "tests/**/*"
-  ]
+  ],
+  "exclude": ["tests/renderer/**/*"]
 }
