@@ -19,7 +19,7 @@ describe('CreateRegionScreen', () => {
     const api = installApiMock()
     api.createRegion.mockResolvedValue(ok(result))
     const onCreated = vi.fn()
-    render(<CreateRegionScreen suggestedName="Région 1" onCreated={onCreated} />)
+    render(<CreateRegionScreen suggestedName="Région 1" onCreated={onCreated} onCancel={vi.fn()} />)
 
     expect(screen.getByLabelText<HTMLInputElement>('Nom de la région').value).toBe('Région 1')
     await user.type(screen.getByLabelText(/^Mot de passe/), 'une phrase de passe valide')
@@ -46,7 +46,7 @@ describe('CreateRegionScreen', () => {
       fail('PASSWORD_ALREADY_USED', 'Ce mot de passe est déjà utilisé par une autre région.')
     )
     const onCreated = vi.fn()
-    render(<CreateRegionScreen suggestedName="Région 2" onCreated={onCreated} />)
+    render(<CreateRegionScreen suggestedName="Région 2" onCreated={onCreated} onCancel={vi.fn()} />)
 
     await user.type(screen.getByLabelText(/^Mot de passe/), 'une phrase de passe valide')
     await user.type(
@@ -59,17 +59,16 @@ describe('CreateRegionScreen', () => {
     expect(onCreated).not.toHaveBeenCalled()
   })
 
-  it('n’affiche « Annuler » que s’il y a un écran où revenir', async () => {
+  it('permet d’annuler sans rien créer', async () => {
     const user = userEvent.setup()
-    installApiMock()
-    render(<CreateRegionScreen suggestedName="Région 1" onCreated={vi.fn()} />)
-    expect(screen.queryByRole('button', { name: 'Annuler' })).toBeNull()
-
-    cleanup()
+    const api = installApiMock()
     const onCancel = vi.fn()
     render(<CreateRegionScreen suggestedName="Région 2" onCreated={vi.fn()} onCancel={onCancel} />)
+
     await user.click(screen.getByRole('button', { name: 'Annuler' }))
+
     expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(api.createRegion).not.toHaveBeenCalled()
   })
 })
 

@@ -1,6 +1,7 @@
 import { useState, type SyntheticEvent } from 'react'
 import type { RegionSummaryDto } from '@shared/api'
 import { messageOf, unwrap } from '../api-errors'
+import { Alert } from '../ui/Alert'
 
 interface Props {
   readonly regions: readonly RegionSummaryDto[]
@@ -37,8 +38,12 @@ export function LoginScreen({
   }
 
   return (
-    <form className="card" onSubmit={(event) => void submit(event)}>
-      <h2>Connexion à une région</h2>
+    <form onSubmit={(event) => void submit(event)}>
+      <h1>Connexion à une région</h1>
+      <p className="auth__lead">
+        Choisissez la région à ouvrir et saisissez son mot de passe. Les données des autres régions
+        restent fermées.
+      </p>
 
       <label htmlFor="region">Région</label>
       <select
@@ -67,11 +72,7 @@ export function LoginScreen({
         required
       />
 
-      {error && (
-        <p className="message message--error" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Alert tone="error">{error}</Alert>}
 
       <div className="actions">
         <button type="submit" disabled={pending || password.length === 0}>

@@ -1,11 +1,16 @@
 import { type Ariary } from './shared/ariary'
 import { DomainError } from './shared/errors'
 import { type IsoDate, parseIsoDate, parseOptionalIsoDate } from './shared/iso-date'
-import { requiredText } from './shared/text'
+import { oneOf, requiredText } from './shared/text'
 
 /** DAO : appel d'offres ouvert ; AOR : restreint ; DCP : consultation de prix ; AMI / APQ : présélection. */
 export const PROCEDURE_METHODS = ['DAO', 'AOR', 'DCP', 'AMI', 'APQ'] as const
 export type ProcedureMethod = (typeof PROCEDURE_METHODS)[number]
+
+/** Valide un code reçu de l'extérieur (interface, base) et le convertit en `ProcedureMethod`. */
+export function parseProcedureMethod(value: string): ProcedureMethod {
+  return oneOf(value, PROCEDURE_METHODS, 'mode de passation')
+}
 
 /** Étapes d'une procédure, dans leur ordre normal de déroulement. */
 export const STEP_KINDS = [

@@ -6,7 +6,14 @@ import { CreateRegionUseCase, type CreateRegionResult } from '@application/regio
 import { ListRegionsUseCase } from '@application/regions/list-regions'
 import { OpenRegionUseCase } from '@application/regions/open-region'
 import { RateLimitedError } from '@domain/shared/errors'
-import { FakeClock, FakeKeyService, FakeStorage, InMemoryRegistry, SequentialIds } from './fakes'
+import {
+  FakeClock,
+  FakeKeyService,
+  FakeStorage,
+  InMemoryOrganizationSettings,
+  InMemoryRegistry,
+  SequentialIds
+} from './fakes'
 
 const PASSWORD = 'une phrase de passe valide'
 
@@ -28,7 +35,7 @@ beforeEach(() => {
   throttle = new LoginThrottle()
   create = new CreateRegionUseCase(registry, keys, storage, new SequentialIds(), clock, throttle)
   open = new OpenRegionUseCase(registry, keys, storage, session, throttle, clock)
-  list = new ListRegionsUseCase(registry)
+  list = new ListRegionsUseCase(registry, new InMemoryOrganizationSettings())
 })
 
 const createRegion = (name: string, password = PASSWORD): Promise<CreateRegionResult> =>
@@ -134,7 +141,12 @@ describe('CreateRegionUseCase', () => {
 
 describe('ListRegionsUseCase', () => {
   it('propose « Région 1 » au départ, puis le premier nom libre', async () => {
-    expect(list.execute()).toEqual({ regions: [], canCreate: true, suggestedName: 'Région 1' })
+    expect(list.execute()).toEqual({
+      organizationName: null,
+      regions: [],
+      canCreate: true,
+      suggestedName: 'Région 1'
+    })
 
     await createRegion('Région 1')
     await createRegion('Analamanga', 'un autre mot de passe')

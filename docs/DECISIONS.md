@@ -168,3 +168,43 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Garde-fou : un test ouvre le fichier avec la clé brute (et échoue si quelqu'un revient au mode phrase de passe, vérifié par mutation) ; un test refuse une clé qui ne fait pas 32 octets.
 - Ne JAMAIS passer à `openDatabase` un mot de passe saisi par l'utilisateur.
 - Coût restant : le déverrouillage par mot de passe (scrypt, N = 2^17, environ 0,45 s ici) coûte plus cher sur un poste lent (jusqu'à plusieurs secondes). Réglable plus tard sans perdre de données car les paramètres sont stockés par région ; à décider après mesure sur le poste de la PRMP.
+
+## ADR-023 — Comportement du plan de passation (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-10-09)
+- Numérotation : le numéro d'un plan est attribué automatiquement (1, 2, 3… au sein d'une année, par région), comme dans le SIGMP. Plusieurs plans par année sont permis.
+- Mise à jour : « Enregistrer une mise à jour » est une action volontaire de la PRMP (date du jour + compteur +1). Modifier des lignes n'incrémente PAS le compteur automatiquement. À confirmer : le SIGMP fait-il autrement ?
+- Entête non modifiable après création (année, date d'élaboration) : en cas d'erreur, supprimer le plan vide et le recréer. À confirmer si la PRMP veut pouvoir corriger l'année.
+- Ligne : nature (4 valeurs), objet obligatoire, financement, comptes (liste), 3 dates prévisionnelles (ordre lancement ≤ ouverture des plis ≤ attribution, chacune facultative), mode de passation facultatif, responsable facultatif, services bénéficiaires avec montants (le montant d'une ligne = somme des services). Une ligne sans montant est autorisée (saisie progressive).
+- Suppression : une ligne, ou un plan, qui est rattaché à une procédure ou à un contrat ne peut PAS être supprimé (`PPM_LINE_IN_USE`), pour ne pas perdre le lien en silence. Pas de corbeille : une suppression autorisée est définitive, après confirmation en deux clics.
+- Non repris du SIGMP : type ASAPC, calendrier détaillé, impression (Phase 11).
+- Choix techniques : listes de valeurs et libellés français partagés dans `shared/ppm-options.ts` (un test les compare à celles du domaine) ; montants saisis en entier avec espaces tolérés (« 1 500 000 ») ; les cas d'utilisation retournent des vues simples (textes, nombres) vérifiées à la compilation contre les DTO par l'annotation de type des handlers.
+
+## ADR-024 — Aucune migration de base pour la Phase 4
+
+- Statut : accepté (2026-10-09)
+- Le schéma de la migration 001 couvrait déjà le plan de passation : aucune migration ajoutée, aucune base existante à convertir.
+
+## ADR-025 — Nom de la PRMP : demandé au premier lancement, modifiable ensuite
+
+- Statut : accepté (2026-10-14) ; à confirmer : « nom de la PRMP » désigne-t-il l'institution (ex. « PRMP du Ministère de l'Environnement, Fianarantsoa ») ou la personne responsable ? Le champ est un texte libre : les deux conviennent.
+- Contexte : demande de l'utilisateur après la Phase 4 : renseigner le nom de la PRMP au premier lancement.
+- Choix : un champ « Nom de la PRMP » (obligatoire, 120 caractères maximum, espaces superflus retirés) sur l'écran de première configuration, avant la première région. Il s'affiche en grand sur le panneau des écrans d'accès, dans le bandeau du haut de l'espace de travail, et servira aux états imprimés (Phase 11). Il se corrige dans « Paramètres ».
+- Stockage : fichier `settings.json` dans le dossier de données, hors des régions (le nom est commun à toutes). Il ne contient aucun secret (`{ version, organizationName }`). Un fichier illisible est ignoré : le nom est simplement redemandé, car un libellé ne doit jamais empêcher d'ouvrir les données.
+- Ordre à la création : le nom est enregistré AVANT la région ; si la région échoue (mot de passe refusé), le nom reste enregistré et pré-remplit le formulaire à la nouvelle tentative.
+- Installations existantes (nom absent) : un avertissement sur l'accueil et un lien dans le bandeau mènent à « Paramètres ».
+- Écriture atomique commune (`atomic-write.ts`) réutilisée par le registre des régions et les réglages.
+
+## ADR-026 — Identité visuelle et conception de l'interface
+
+- Statut : accepté (2026-10-14)
+- Contexte : outil de bureau d'un ministère de l'Environnement, utilisé longtemps sur un poste Windows 10 parfois lent, par une seule personne. Besoins : lisibilité, sobriété, confiance. Aucun accès réseau permis.
+- Couleurs : vert forêt pour l'institution (menu, boutons principaux), rouge latérite réservé aux alertes et aux suppressions, fonds neutres clairs. Petit drapeau de Madagascar comme repère d'identité (écrans d'accès et menu).
+- Police : Public Sans (dessinée pour les administrations), embarquée dans l'application via `@fontsource-variable/public-sans` : aucune ressource externe, la CSP stricte est conservée. Chiffres alignés en colonnes (tabulaires) pour les montants. Vérifié par le test de bout en bout (police chargée).
+- Structure : écrans d'accès en deux volets (panneau institutionnel + formulaire) ; espace de travail avec menu à gauche, bandeau PRMP / région, page à titre unique (h1). Étapes numérotées uniquement pour la première configuration (c'est une vraie suite).
+- Parti pris : peu de cartes décoratives ; tableaux de type registre (en-tête souligné en vert, totaux en pied) ; listes de chiffres clés plutôt que gros compteurs ; états vides qui expliquent quoi faire ; suppressions en deux clics avec rouge uniquement à ce moment.
+- Modules à venir (Procédures, Contrats) visibles mais inactifs, avec la mention « Bientôt ».
+- Accessibilité : étiquettes liées aux champs, repères de navigation, page courante signalée (`aria-current`), focus visible, lien d'évitement, respect de la préférence de réduction des animations, contrastes des couleurs de texte mesurés (norme WCAG) sur les 15 associations utilisées : tous au moins 4,6 pour 1 (le seuil AA du texte courant est 4,5), la plupart au-delà de 6 pour 1.
+- Organisation du code : `styles/` (jetons, base, composants, mise en page), `ui/` (Icon, Alert, PageHeader, EmptyState), `layouts/` (AuthLayout, AppShell). Icônes dessinées en SVG intégré (aucune dépendance).
+- Langue : Electron est lancé en français (`--lang=fr`) pour les sélecteurs de date. Les dates restent au format jour/mois/année.
+- Limites connues : mise en page conçue pour une fenêtre de 960 px de large minimum ; pas de thème sombre ; non vérifiée sur Windows 10 (rendu des polices et de l'échelle d'affichage).

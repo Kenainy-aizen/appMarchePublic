@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Alert } from '../ui/Alert'
+import { Icon } from '../ui/Icon'
 
 interface Props {
   readonly regionName: string
@@ -25,23 +27,30 @@ export function RecoveryKeyScreen({
   }
 
   return (
-    <section className="card">
-      <h2>Clé de récupération — {regionName}</h2>
-      <p className="message message--warning" role="note">
-        Notez cette clé maintenant. Elle ne sera <strong>plus jamais affichée</strong>. Si vous
-        oubliez le mot de passe de la région, elle est le seul moyen de récupérer les données.
-      </p>
+    <section>
+      <h1>Clé de récupération — {regionName}</h1>
+      <Alert tone="warning" role="note">
+        <span>
+          Notez cette clé maintenant. Elle ne sera <strong>plus jamais affichée</strong>. Si vous
+          oubliez le mot de passe de la région, elle est le seul moyen de récupérer les données.
+        </span>
+      </Alert>
 
       <div className="print-area">
         <p className="print-title">Clé de récupération — {regionName}</p>
         <p className="recovery-key" aria-label="Clé de récupération">
-          {recoveryKey}
+          {recoveryKey.split('-').map((group, index, groups) => (
+            <span className="recovery-key__group" key={`${group}-${String(index)}`}>
+              {index < groups.length - 1 ? `${group}-` : group}
+            </span>
+          ))}
         </p>
         <p className="print-note">À conserver en lieu sûr, séparément de l’ordinateur.</p>
       </div>
 
       <div className="actions">
         <button type="button" className="secondary" onClick={() => void copy()}>
+          <Icon name={copied ? 'check' : 'copy'} size={16} />
           {copied ? 'Copiée' : 'Copier'}
         </button>
         <button
@@ -51,6 +60,7 @@ export function RecoveryKeyScreen({
             window.print()
           }}
         >
+          <Icon name="printer" size={16} />
           Imprimer
         </button>
       </div>

@@ -1,0 +1,51 @@
+/*
+ * Identité visuelle : application d'un ministère de l'Environnement, utilisée longtemps et au bureau.
+ * Vert forêt pour l'institution, rouge latérite réservé aux alertes et suppressions, fonds clairs neutres.
+ * Aucune police ni ressource externe (l'application n'a pas le droit d'accéder au réseau).
+ */
+:root {
+  --forest-950: #0f3321;
+  --forest-900: #123d29;
+  --forest-800: #17492f;
+  --forest-700: #1b5e3b;
+  --forest-600: #237a4b;
+  --forest-200: #bfdccb;
+  --forest-100: #e3f0e7;
+  --forest-50: #f1f7f3;
+
+  --ink: #1e2b25;
+  --ink-soft: #4f5d56;
+  --ink-faint: #6b7872;
+
+  --paper: #f3f5f3;
+  --surface: #ffffff;
+  --line: #dce2de;
+  --line-strong: #b8c2bc;
+
+  --laterite: #b3261e;
+  --laterite-dark: #8e1d17;
+  --laterite-100: #fbeae8;
+
+  --ochre: #7a4f00;
+  --ochre-100: #fff3d6;
+  --ochre-line: #e8ce8f;
+
+  --info: #1f4e79;
+  --info-100: #e6eff7;
+
+  --font: 'Public Sans Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.75rem;
+  --text-brand: 2.5rem;
+
+  --radius-control: 6px;
+  --radius-panel: 10px;
+
+  --focus-ring: 0 0 0 3px rgba(35, 122, 75, 0.38);
+  --sidebar-width: 15.75rem;
+}

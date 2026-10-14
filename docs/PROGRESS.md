@@ -1,11 +1,11 @@
 # PROGRESS — Suivi des marchés publics (PRMP, version locale)
 
 > Mémoire du projet. À lire EN PREMIER à chaque reprise de conversation.
-> Dernière mise à jour : 2026-10-06 (fin de Phase 3, en attente de validation)
+> Dernière mise à jour : 2026-10-14 (Phase 4b livrée, en attente de validation)
 
 ## Phase courante
 
-**Phase 3 — Régions et authentification** (code terminé, EN ATTENTE de validation par l'utilisateur)
+**Phase 4b — Nom de la PRMP et refonte de l'interface** (code terminé, EN ATTENTE de validation par l'utilisateur)
 
 ## Contexte en bref
 
@@ -21,8 +21,9 @@ Développement sous Linux ; cible Windows 10.
 | 0   | Cadrage et documentation initiale                                     | TERMINÉ                  |
 | 1   | Initialisation du projet (Electron + React + TS, lint, tests)         | TERMINÉ                  |
 | 2   | Domaine et base de données (entités, schéma, migrations, dépôts)      | TERMINÉ                  |
-| 3   | Régions et authentification (mots de passe, base chiffrée, isolation) | EN ATTENTE DE VALIDATION |
-| 4   | Plan de passation (PPM)                                               | À FAIRE                  |
+| 3   | Régions et authentification (mots de passe, base chiffrée, isolation) | TERMINÉ                  |
+| 4   | Plan de passation (PPM)                                               | TERMINÉ                  |
+| 4b  | Nom de la PRMP au premier lancement + refonte de l'interface          | EN ATTENTE DE VALIDATION |
 | 5   | Procédures de passation et suivi des étapes                           | À FAIRE                  |
 | 6   | Candidats / soumissionnaires                                          | À FAIRE                  |
 | 7   | Contrats et exécution (OS, réceptions, avenants, clôture)             | À FAIRE                  |
@@ -52,17 +53,25 @@ Développement sous Linux ; cible Windows 10.
 - 2026-10-05 — Phase 3 : vérifié sous Linux : typecheck, lint, format, 130 tests, build, smoke SQLite sous Electron, `npm run e2e` (17/17 sur la vraie application sous écran virtuel). NON vérifié : exécution sur Windows 10.
 - 2026-10-05 — Phase 3 : relecture avant livraison : le dossier de données dépendait du nom du produit (risque de « perdre » les régions lors d'un renommage) ; nom fixé `prmp-suivi-marches` (ADR-021). Sections 1, 2 et 5 d'ARCHITECTURE.md encore rédigées « avant la Phase 3 » : corrigées et relues. Un premier script de correction avait échoué en silence à mi-parcours (chaîne introuvable) : toutes les modifications ont été revérifiées une par une par `grep`.
 - 2026-10-06 — Phase 3 : retour de l'utilisateur après `npm test` : 4 tests d'intégration en dépassement de délai (5 s) ; tests de base chiffrée à 14 s chez lui. Cause mesurée : chaque ouverture de base payait la dérivation PBKDF2 de SQLCipher (clé traitée comme phrase de passe) ; son poste est environ 10 fois plus lent que le mien. Correctif : clé brute (ADR-022), délai de test 30 s, test de non-régression vérifié par mutation. Rejoué ici : 132 tests (3 s), smoke SQLite sous Electron, e2e 17/17. Non revérifié sur Windows.
+- 2026-10-09 — Phase 3 validée par l'utilisateur (tests à 100 % chez lui après le correctif ADR-022).
+- 2026-10-09 — Phase 4 : domaine (remplacer/retirer une ligne), 7 cas d'utilisation, 7 canaux IPC, module d'interface (liste, détail, formulaire de ligne), formatage des montants et dates. Vérifié sous Linux : types, lint, 209 tests, build, e2e 40/40 (clics réels dans la vraie application). Contrôle par mutation : 5 régressions volontaires toutes détectées. Non vérifié : exécution sur Windows 10 et ressenti à l'écran de l'utilisateur.
+- 2026-10-09 — Phase 4 : au cours du travail, deux scripts de correction ont échoué en silence (chaîne introuvable, fichier non écrit) ; chaque modification de documentation est donc relue par `grep` après coup.
+- 2026-10-14 — Phase 4 validée par l'utilisateur (tous les tests passent, l'application démarre). Demandes nouvelles : champ « nom de la PRMP » au premier lancement ; interface plus professionnelle. Phase 4b ajoutée au plan (hors des phases 0 à 14 initiales).
+- 2026-10-14 — Phase 4b : nom de la PRMP (domaine, fichier `settings.json`, cas d'utilisation, canal IPC, écran de configuration, Paramètres, bandeau) ; interface refaite (ADR-026) avec captures d'écran de l'application réelle relues une à une. Défauts trouvés sur les captures et corrigés : tableau du plan qui débordait (actions coupées), libellé du menu sur deux lignes, clé de récupération coupée au milieu d'un groupe, champs de mot de passe désalignés, bouton de création hors de l'écran. Vérifié sous Linux : types, lint, 234 tests, build, e2e 53/53, 4 mutations détectées. Non vérifié : Windows 10 (rendu de la police et de l'échelle d'affichage).
+- 2026-10-14 — Note : dans le test de bout en bout lancé sans le dossier du projet, la « version » affichée est celle d'Electron (44.5.1) ; avec `npm run dev` ou l'installateur, c'est celle de package.json (0.1.0).
 
 ## Décisions en attente
 
+- ADR-025 : « nom de la PRMP » = institution ou personne responsable ? (champ libre : les deux conviennent) ; à confirmer.
+- ADR-023 : comportement du plan de passation (mise à jour volontaire, entête figé, suppression interdite si utilisé, champs de la ligne) ; à confirmer avec la PRMP.
 - ADR-014 : modèle de domaine fondé sur le manuel SIGMP ; à confirmer avec la PRMP (modes, types de contrat, événements d'exécution, absence du type ASAPC et du TEF).
 - Politique de mot de passe (ADR-016) : 10 caractères minimum, sans règle de composition ; à confirmer avec la PRMP.
 
 ## Prochaines actions
 
-1. L'utilisateur intègre le zip de la Phase 3 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à faire à la main : créer une région, noter la clé de récupération, se déconnecter, se reconnecter, créer une seconde région, vérifier qu'un mot de passe identique est refusé.
-2. Valider la Phase 3.
-3. Démarrer la Phase 4 : Plan de passation (PPM) : cas d'utilisation, canaux IPC, écrans (liste, création, lignes, mise à jour, totaux). Tous les cas d'utilisation passent par `RegionSession.requireWorkspace()`.
+1. L'utilisateur intègre le zip de la Phase 4 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à faire à la main : ouvrir une région, « Plan de passation (PPM) », créer un plan, ajouter une ligne avec deux services et montants, modifier la ligne, enregistrer une mise à jour, supprimer la ligne, changer de région et vérifier que le plan n'y est pas.
+2. Valider la Phase 4 (et confirmer ADR-023 auprès de la PRMP).
+3. Démarrer la Phase 5 : procédures de passation et suivi des étapes (créer une procédure rattachée à une ligne du plan, dates réelles des 5 étapes, règles de succession à confirmer d'abord). Tous les cas d'utilisation passent par `RegionSession.requireWorkspace()`.
 
 ## Points à reprendre dans les phases suivantes
 
