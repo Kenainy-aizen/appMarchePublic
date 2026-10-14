@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
 import { z } from 'zod'
 import type { RegionRegistry, RegisteredRegion } from '@application/ports'
+import { writeFileAtomically } from './atomic-write'
 
 const wrappedKeySchema = z.object({ iv: z.string(), data: z.string(), tag: z.string() })
 
@@ -74,9 +74,6 @@ export class JsonRegionRegistry implements RegionRegistry {
 
   /** Écriture atomique : fichier temporaire puis renommage, pour ne jamais laisser un registre à moitié écrit. */
   private write(regions: readonly RegisteredRegion[]): void {
-    mkdirSync(dirname(this.filePath), { recursive: true })
-    const temporary = `${this.filePath}.tmp`
-    writeFileSync(temporary, JSON.stringify({ version: 1, regions }, null, 2), { mode: 0o600 })
-    renameSync(temporary, this.filePath)
+    writeFileAtomically(this.filePath, JSON.stringify({ version: 1, regions }, null, 2))
   }
 }

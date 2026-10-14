@@ -6,9 +6,18 @@ import { RegionSession } from '@application/region-session'
 import { CloseRegionUseCase, GetSessionUseCase } from '@application/regions/close-and-get-session'
 import { CreateRegionUseCase } from '@application/regions/create-region'
 import { ListRegionsUseCase } from '@application/regions/list-regions'
+import { CreatePpmUseCase } from '@application/ppm/create-ppm'
+import { DeletePpmUseCase } from '@application/ppm/delete-ppm'
+import { GetPpmUseCase } from '@application/ppm/get-ppm'
+import { ListPpmsUseCase } from '@application/ppm/list-ppms'
+import { RecordPpmUpdateUseCase } from '@application/ppm/record-ppm-update'
+import { RemovePpmLineUseCase } from '@application/ppm/remove-ppm-line'
+import { SavePpmLineUseCase } from '@application/ppm/save-ppm-line'
+import { SaveOrganizationUseCase } from '@application/organization/save-organization'
 import { OpenRegionUseCase } from '@application/regions/open-region'
 import { ScryptRegionKeyService } from '@infrastructure/crypto/scrypt-key-service'
 import { ElectronAppInfoProvider } from '@infrastructure/electron-app-info-provider'
+import { JsonOrganizationSettings } from '@infrastructure/json-organization-settings'
 import { JsonRegionRegistry } from '@infrastructure/json-region-registry'
 import { SqliteRegionStorage } from '@infrastructure/sqlite/region-storage'
 import { SystemClock, UuidGenerator } from '@infrastructure/system-ports'
@@ -32,30 +41,36 @@ function bootstrap(): RegionSession {
   const dataDirectory = resolveDataDirectory()
   const clock = new SystemClock()
   const registry = new JsonRegionRegistry(join(dataDirectory, 'regions.json'))
+  const settings = new JsonOrganizationSettings(join(dataDirectory, 'settings.json'))
   const storage = new SqliteRegionStorage(join(dataDirectory, 'regions'))
   const keys = new ScryptRegionKeyService()
   const session = new RegionSession()
   const throttle = new LoginThrottle()
+  const ids = new UuidGenerator()
 
   blockOutgoingNetwork()
   registerIpcHandlers({
     getAppInfo: new GetAppInfoUseCase(new ElectronAppInfoProvider()),
-    listRegions: new ListRegionsUseCase(registry),
-    createRegion: new CreateRegionUseCase(
-      registry,
-      keys,
-      storage,
-      new UuidGenerator(),
-      clock,
-      throttle
-    ),
+    listRegions: new ListRegionsUseCase(registry, settings),
+    saveOrganization: new SaveOrganizationUseCase(settings),
+    createRegion: new CreateRegionUseCase(registry, keys, storage, ids, clock, throttle),
     openRegion: new OpenRegionUseCase(registry, keys, storage, session, throttle, clock),
     closeRegion: new CloseRegionUseCase(session),
-    getSession: new GetSessionUseCase(session)
+    getSession: new GetSessionUseCase(session),
+    listPpms: new ListPpmsUseCase(session),
+    getPpm: new GetPpmUseCase(session),
+    createPpm: new CreatePpmUseCase(session, ids, clock),
+    savePpmLine: new SavePpmLineUseCase(session, ids),
+    removePpmLine: new RemovePpmLineUseCase(session),
+    recordPpmUpdate: new RecordPpmUpdateUseCase(session, clock),
+    deletePpm: new DeletePpmUseCase(session)
   })
   createMainWindow()
   return session
 }
+
+// Interface en français : sélecteurs de date (jj/mm/aaaa), correcteur orthographique et menus du système.
+app.commandLine.appendSwitch('lang', 'fr')
 
 void app.whenReady().then(() => {
   const session = bootstrap()

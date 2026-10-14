@@ -1,0 +1,354 @@
+/* ===================== Écrans d'accès (connexion, premier lancement) ===================== */
+.auth {
+  display: grid;
+  grid-template-columns: minmax(20rem, 5fr) minmax(24rem, 4fr);
+  min-height: 100vh;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2.5rem 3rem;
+  color: #fff;
+  background: var(--forest-900);
+}
+
+.brand__body {
+  margin-block: auto;
+}
+
+.brand__product {
+  font-size: var(--text-lg);
+  color: var(--forest-200);
+}
+
+.brand__name {
+  max-width: 16ch;
+  margin-top: 0.75rem;
+  font-size: var(--text-brand);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.brand__steps {
+  display: grid;
+  gap: 0.875rem;
+  padding: 0;
+  margin: 2.5rem 0 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.brand__steps li {
+  display: flex;
+  gap: 0.875rem;
+  align-items: center;
+  color: var(--forest-200);
+  counter-increment: step;
+}
+
+.brand__steps li::before {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  content: counter(step);
+  border: 1px solid var(--forest-600);
+  border-radius: 50%;
+}
+
+.brand__steps li[aria-current='step'] {
+  font-weight: 650;
+  color: #fff;
+}
+
+.brand__steps li[aria-current='step']::before {
+  color: var(--forest-900);
+  background: #fff;
+  border-color: #fff;
+}
+
+.brand__note {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  max-width: 42ch;
+  font-size: var(--text-sm);
+  color: var(--forest-200);
+}
+
+.brand__note svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.brand__version {
+  font-size: var(--text-xs);
+  color: var(--forest-200);
+  opacity: 0.8;
+}
+
+.auth__main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2rem;
+  background: var(--surface);
+}
+
+.auth__panel {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.auth__panel > h1 {
+  font-size: var(--text-2xl);
+}
+
+.auth__lead {
+  margin-top: 0.5rem;
+  color: var(--ink-soft);
+}
+
+.auth__section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.auth__section h2 {
+  font-size: var(--text-lg);
+}
+
+/* Dans le panneau d'accès, les paires de champs (mot de passe / confirmation) restent côte à côte. */
+.auth__panel .form-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth__panel .actions {
+  margin-top: 1.5rem;
+}
+
+.splash {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  color: var(--ink-soft);
+}
+
+.splash .alert {
+  max-width: 34rem;
+}
+
+/* ===================== Espace de travail (après connexion) ===================== */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1.25rem 0.875rem;
+  color: #fff;
+  background: var(--forest-900);
+}
+
+.sidebar__brand {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.25rem 0.625rem 1.25rem;
+  font-size: var(--text-base);
+  font-weight: 650;
+  line-height: 1.25;
+  border-bottom: 1px solid var(--forest-800);
+}
+
+.sidebar nav {
+  flex: 1;
+  margin-top: 1rem;
+}
+
+.sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.sidebar__bottom {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--forest-800);
+}
+
+.nav-item {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 85%);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+.nav-item:hover:not(:disabled) {
+  color: #fff;
+  background: var(--forest-800);
+}
+
+.nav-item[aria-current='page'] {
+  font-weight: 650;
+  color: #fff;
+  background: var(--forest-700);
+  border-left-color: #8fd1a9;
+}
+
+.nav-item:focus-visible {
+  box-shadow: 0 0 0 3px rgb(143 209 169 / 55%);
+}
+
+.nav-item:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.nav-item__tag {
+  margin-left: auto;
+  padding: 0.0625rem 0.5rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid var(--forest-600);
+  border-radius: 999px;
+}
+
+.sidebar__version {
+  padding: 0.75rem 0.75rem 0;
+  font-size: var(--text-xs);
+  color: var(--forest-200);
+}
+
+.shell__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.5rem;
+  padding: 0.5rem 2.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar__org {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__org button {
+  min-height: 0;
+  padding: 0;
+  font-weight: 500;
+  color: var(--ochre);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+}
+
+.topbar__region {
+  display: flex;
+  flex: none;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--forest-800);
+  background: var(--forest-50);
+  border: 1px solid var(--forest-200);
+  border-radius: 999px;
+}
+
+.page {
+  flex: 1;
+  width: 100%;
+  max-width: 72rem;
+  padding: 2rem 2.5rem 3rem;
+  margin: 0 auto;
+}
+
+/* Fenêtre étroite (minimum de l'application : 960 px) */
+@media (max-width: 1100px) {
+  .auth {
+    grid-template-columns: minmax(16rem, 2fr) minmax(22rem, 3fr);
+  }
+
+  .brand {
+    padding: 2rem;
+  }
+
+  .brand__name {
+    font-size: 2rem;
+  }
+
+  .topbar,
+  .page {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* ===================== Impression de la clé de récupération ===================== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .print-title,
+  .print-note {
+    display: block;
+  }
+}

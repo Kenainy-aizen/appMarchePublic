@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   type Ppm,
   addPpmLine,
+  findPpmLine,
+  parseProcurementNature,
+  removePpmLine,
+  replacePpmLine,
   createPpm,
   createPpmLine,
   ppmLineTotal,
@@ -112,5 +116,46 @@ describe('totaux et mises à jour', () => {
     expect(updated.updateCount).toBe(2)
     expect(updated.lastUpdateOn).toBe('2026-03-01')
     expect(original.updateCount).toBe(0)
+  })
+})
+
+describe('modification des lignes', () => {
+  const lineOf = (id: string, object: string): ReturnType<typeof createPpmLine> =>
+    createPpmLine({ id, nature: 'TRAVAUX', object })
+
+  it('remplace une ligne sur place, sans changer l’ordre', () => {
+    const ppm = addPpmLine(
+      addPpmLine(addPpmLine(newPpm(), lineOf('a', 'A')), lineOf('b', 'B')),
+      lineOf('c', 'C')
+    )
+
+    const updated = replacePpmLine(ppm, lineOf('b', 'B modifiée'))
+
+    expect(updated.lines.map((line) => line.object)).toEqual(['A', 'B modifiée', 'C'])
+    expect(ppm.lines[1]?.object).toBe('B')
+  })
+
+  it('refuse de remplacer ou de retirer une ligne inconnue', () => {
+    const ppm = addPpmLine(newPpm(), lineOf('a', 'A'))
+    expect(() => replacePpmLine(ppm, lineOf('zzz', 'Z'))).toThrow(DomainError)
+    expect(() => removePpmLine(ppm, 'zzz')).toThrow(DomainError)
+  })
+
+  it('retire une ligne et la retrouve par son identifiant', () => {
+    const ppm = addPpmLine(addPpmLine(newPpm(), lineOf('a', 'A')), lineOf('b', 'B'))
+
+    const without = removePpmLine(ppm, 'a')
+
+    expect(without.lines.map((line) => line.id)).toEqual(['b'])
+    expect(findPpmLine(without, 'a')).toBeNull()
+    expect(findPpmLine(without, 'b')?.object).toBe('B')
+  })
+})
+
+describe('parseProcurementNature', () => {
+  it('accepte les natures connues et refuse le reste', () => {
+    expect(parseProcurementNature('SERVICES')).toBe('SERVICES')
+    expect(() => parseProcurementNature('services')).toThrow(DomainError)
+    expect(() => parseProcurementNature('')).toThrow(DomainError)
   })
 })

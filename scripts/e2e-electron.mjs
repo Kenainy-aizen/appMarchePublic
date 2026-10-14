@@ -118,12 +118,49 @@ try {
   }
   await sleep(1500)
 
-  // 1. L'interface s'affiche : écran de création (aucune région)
+  const waitUntil = async (expression, label, timeoutMs = 20000) => {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      try {
+        if (await evaluate(expression)) return true
+      } catch {
+        /* page en cours de chargement : on réessaie */
+      }
+      await sleep(250)
+    }
+    throw new Error(`délai dépassé : ${label}`)
+  }
+  const pageHas = (text) =>
+    `(document.body?.innerText ?? '').replace(/\\s/g,' ').includes(${JSON.stringify(text)})`
+  const setField = (selector, value) =>
+    evaluate(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)})
+      if (!el) return false
+      const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
+        : el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype
+      Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(value)})
+      el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }))
+      return true
+    })()`)
+  const clickButton = (label) =>
+    evaluate(`(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === ${JSON.stringify(label)})
+      if (!b || b.disabled) return false
+      b.click()
+      return true
+    })()`)
+  const OBJECT = 'Gardiennage du site de Fianarantsoa'
+  const ORG = 'PRMP du Ministère de l’Environnement, Fianarantsoa'
+  const P1 = 'phrase de passe region un',
+    P2 = 'phrase de passe region deux'
+
+  // 1. Première utilisation, pilotée par l'INTERFACE réelle : nom de la PRMP, première région, clé de récupération
+  await waitUntil(pageHas('Configurer l’application'), 'écran de configuration initiale')
   const bodyText = await evaluate('document.body.innerText')
   check(
-    'première ouverture : écran « Créer une région »',
-    bodyText.includes('Créer une région'),
-    bodyText.replace(/\s+/g, ' ').slice(0, 90)
+    'première ouverture : écran « Configurer l’application » avec le champ « Nom de la PRMP »',
+    bodyText.includes('Configurer l’application') && bodyText.includes('Nom de la PRMP'),
+    bodyText.replace(/\\s+/g, ' ').slice(0, 90)
   )
   check(
     'window.api exposé par le preload',
@@ -133,21 +170,64 @@ try {
     'Node non exposé à l’interface (isolation)',
     await evaluate("typeof require === 'undefined' && typeof process === 'undefined'")
   )
+  check(
+    'police embarquée chargée (aucun accès réseau nécessaire)',
+    await evaluate(
+      "document.fonts.ready.then(() => [...document.fonts].some((f) => f.family.includes('Public Sans') && f.status === 'loaded'))"
+    )
+  )
 
   await send('Page.enable')
-  const shot = await send('Page.captureScreenshot', { format: 'png' })
-  writeFileSync(join(outputDir, '1-creation.png'), Buffer.from(shot.data, 'base64'))
+  const shotSetup = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '1-configuration.png'), Buffer.from(shotSetup.data, 'base64'))
 
-  // 2. Parcours réel avec vrai chiffrement (scrypt N=2^17) et vrai SQLite
-  const P1 = 'phrase de passe region un',
-    P2 = 'phrase de passe region deux'
-  const r1 = await evaluate(
-    `window.api.createRegion({name:'Région 1',password:${JSON.stringify(P1)},passwordConfirmation:${JSON.stringify(P1)}})`
+  await setField('#organization', ORG)
+  await setField('#new-password', P1)
+  await setField('#confirmation', P1)
+  check('clic « Créer la région » (vrai chiffrement)', await clickButton('Créer la région'))
+  await waitUntil(
+    '!!document.querySelector(".recovery-key")',
+    'clé de récupération affichée',
+    90000
+  )
+  const keyText = await evaluate("document.querySelector('.recovery-key')?.textContent ?? ''")
+  check(
+    'clé de récupération affichée, au bon format',
+    /^([A-Z2-7]{4}-){7}[A-Z2-7]{4}$/.test(keyText),
+    keyText
   )
   check(
-    'création de la région 1',
-    r1.ok && /^([A-Z2-7]{4}-){7}[A-Z2-7]{4}$/.test(r1.value.recoveryKey),
-    r1.ok ? r1.value.recoveryKey : JSON.stringify(r1)
+    'étape 3 signalée dans le panneau (aria-current)',
+    await evaluate(
+      "document.querySelector('.brand__steps li[aria-current=\"step\"]')?.textContent === 'Clé de récupération'"
+    )
+  )
+  const shotKey = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '1b-cle.png'), Buffer.from(shotKey.data, 'base64'))
+  check(
+    '« Continuer » bloqué tant que la clé n’est pas confirmée',
+    !(await clickButton('Continuer'))
+  )
+  await evaluate("document.querySelector('input[type=checkbox]').click()")
+  check('clic « Continuer » après confirmation', await clickButton('Continuer'))
+  await waitUntil(pageHas('Connexion à une région'), 'écran de connexion')
+  check(
+    'connexion : le nom de la PRMP s’affiche en grand sur le panneau',
+    await evaluate(`document.querySelector('.brand__name')?.textContent === ${JSON.stringify(ORG)}`)
+  )
+  const shotLogin = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '2-connexion.png'), Buffer.from(shotLogin.data, 'base64'))
+
+  // 2. Suite du parcours avec vrai chiffrement (scrypt N=2^17) et vrai SQLite
+  const overview1 = await evaluate('window.api.getRegionsOverview()')
+  const r1 = {
+    ok: overview1.ok && overview1.value.regions.length === 1,
+    value: { region: overview1.value.regions[0], recoveryKey: keyText }
+  }
+  check(
+    'la région 1 créée par l’interface est enregistrée et le nom de la PRMP est conservé',
+    r1.ok && r1.value.region.name === 'Région 1' && overview1.value.organizationName === ORG,
+    JSON.stringify(overview1.value)
   )
   const dup = await evaluate(
     `window.api.createRegion({name:'Région 2',password:${JSON.stringify(P1)},passwordConfirmation:${JSON.stringify(P1)}})`
@@ -193,6 +273,166 @@ try {
   const afterClose = await evaluate('window.api.getSession()')
   check('déconnexion', closed.ok && afterClose.value.region === null)
 
+  // 2b. Plan de passation, piloté par l'INTERFACE réelle (clics et saisies), puis par l'API
+
+  await send('Page.reload')
+  await waitUntil(pageHas('Connexion à une région'), 'écran de connexion après rechargement')
+  check('après rechargement : écran de connexion (régions existantes)', true)
+
+  await setField('#password', P1)
+  check('clic « Ouvrir la région »', await clickButton('Ouvrir la région'))
+  await waitUntil(pageHas('Plan de passation (PPM)'), 'accueil de la région')
+  check('interface : accueil de la région 1 affiché', await evaluate(pageHas('Région : Région 1')))
+  check(
+    'interface : le nom de la PRMP est affiché dans le bandeau du haut',
+    await evaluate(`document.querySelector('.topbar__org')?.textContent === ${JSON.stringify(ORG)}`)
+  )
+  await waitUntil(pageHas('Aucun plan de passation dans cette région'), 'accueil sans plan')
+  const shotHome = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '2b-accueil.png'), Buffer.from(shotHome.data, 'base64'))
+
+  check('clic « Plan de passation (PPM) »', await clickButton('Plan de passation (PPM)'))
+  await waitUntil(pageHas('Aucun plan de passation pour cette région.'), 'liste vide')
+  check('interface : liste des plans vide', true)
+
+  check('clic « Créer le plan »', await clickButton('Créer le plan'))
+  await waitUntil(pageHas('Ce plan ne contient encore aucune ligne.'), 'détail du nouveau plan')
+  check(
+    'interface : plan n° 1 créé, sans ligne',
+    await evaluate(pageHas('Plan de passation n° 1')),
+    (await evaluate('document.querySelector("h3")?.textContent')) ?? ''
+  )
+
+  check('clic « Ajouter une ligne »', await clickButton('Ajouter une ligne'))
+  await waitUntil(pageHas('Nouvelle ligne du plan'), 'formulaire de ligne')
+  await setField('#line-nature', 'SERVICES')
+  await setField('#line-object', OBJECT)
+  await setField('#line-method', 'DCP')
+  await clickButton('Ajouter un service')
+  await waitUntil('!!document.querySelector("#service-0")', 'champ service')
+  await setField('#service-0', 'SAF')
+  await setField('#amount-0', '1 500 000')
+  await clickButton('Ajouter un service')
+  await waitUntil('!!document.querySelector("#service-1")', 'second service')
+  await setField('#service-1', 'SRH')
+  await setField('#amount-1', '250000')
+  await waitUntil(
+    pageHas('Montant total de la ligne : 1 750 000 Ar'),
+    'total en direct du formulaire'
+  )
+  check('interface : total de la ligne calculé en direct (1 750 000 Ar)', true)
+
+  const shotForm = await send('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: true
+  })
+  writeFileSync(join(outputDir, '3a-formulaire-ligne.png'), Buffer.from(shotForm.data, 'base64'))
+  check('clic « Enregistrer la ligne »', await clickButton('Enregistrer la ligne'))
+  await waitUntil(pageHas(OBJECT), 'ligne affichée dans le plan')
+  check(
+    'interface : ligne enregistrée, libellés français et total du plan',
+    (await evaluate(pageHas('Services'))) &&
+      (await evaluate(pageHas('Consultation de prix (DCP)'))) &&
+      (await evaluate(pageHas('Total du plan 1 750 000 Ar')))
+  )
+
+  check('clic « Enregistrer une mise à jour »', await clickButton('Enregistrer une mise à jour'))
+  await waitUntil(pageHas('(n° 1)'), 'mise à jour enregistrée')
+  check('interface : mise à jour n° 1 enregistrée', true)
+
+  const shotPpm = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '3-plan.png'), Buffer.from(shotPpm.data, 'base64'))
+
+  // Accueil avec un plan, puis page Paramètres
+  check('clic « Accueil »', await clickButton('Accueil'))
+  await waitUntil(pageHas('Montant total prévu'), 'accueil avec situation')
+  check(
+    'interface : accueil avec le total prévu (1 750 000 Ar)',
+    await evaluate(pageHas('Montant total prévu 1 750 000 Ar'))
+  )
+  const shotHome2 = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '3b-accueil-plan.png'), Buffer.from(shotHome2.data, 'base64'))
+
+  check('clic « Paramètres »', await clickButton('Paramètres'))
+  await waitUntil(pageHas('Identité de la PRMP'), 'page Paramètres')
+  check(
+    'interface : Paramètres affiche le nom de la PRMP à corriger',
+    await evaluate(`document.querySelector('#organization')?.value === ${JSON.stringify(ORG)}`)
+  )
+  const shotSettings = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '3c-parametres.png'), Buffer.from(shotSettings.data, 'base64'))
+
+  // Même parcours côté API (la session de la région 1 est ouverte par l'interface)
+  const plans = await evaluate('window.api.listPpms()')
+  check(
+    'API : un plan, une ligne, 1 750 000 Ar',
+    plans.ok &&
+      plans.value.length === 1 &&
+      plans.value[0].lineCount === 1 &&
+      plans.value[0].total === 1750000,
+    JSON.stringify(plans.ok ? plans.value[0] : plans.error)
+  )
+  const planId = plans.value[0].id
+
+  const badNature = await evaluate(
+    `window.api.savePpmLine({ppmId:${JSON.stringify(planId)},lineId:null,nature:'AUTRE',object:'x',financing:null,accounts:[],plannedLaunchDate:null,plannedBidOpeningDate:null,plannedAwardDate:null,beneficiaries:[],method:null,procedureLead:null})`
+  )
+  check(
+    'entrée invalide (nature inconnue) rejetée à la frontière',
+    !badNature.ok && badNature.error.code === 'INVALID_REQUEST',
+    badNature.ok ? '' : badNature.error.code
+  )
+  const emptyObject = await evaluate(
+    `window.api.savePpmLine({ppmId:${JSON.stringify(planId)},lineId:null,nature:'TRAVAUX',object:'   ',financing:null,accounts:[],plannedLaunchDate:null,plannedBidOpeningDate:null,plannedAwardDate:null,beneficiaries:[],method:null,procedureLead:null})`
+  )
+  check(
+    'règle métier : objet vide refusé avec un message en français',
+    !emptyObject.ok &&
+      emptyObject.error.code === 'REQUIRED_FIELD' &&
+      /obligatoire/.test(emptyObject.error.message),
+    emptyObject.ok ? '' : emptyObject.error.message
+  )
+  const unknownLine = await evaluate(
+    `window.api.removePpmLine({ppmId:${JSON.stringify(planId)},lineId:'inexistante'})`
+  )
+  check(
+    'ligne inconnue : refus propre (LINE_NOT_FOUND)',
+    !unknownLine.ok && unknownLine.error.code === 'LINE_NOT_FOUND',
+    unknownLine.ok ? '' : unknownLine.error.code
+  )
+
+  // Isolation : la région 2 ne voit rien du plan de la région 1
+  const toRegion2 = await evaluate(
+    `window.api.openRegion({regionId:${JSON.stringify(r2.value.region.id)},password:${JSON.stringify(P2)}})`
+  )
+  check('connexion à la région 2', toRegion2.ok, toRegion2.ok ? '' : toRegion2.error.message)
+  const plansOf2 = await evaluate('window.api.listPpms()')
+  check('région 2 : aucun plan visible', plansOf2.ok && plansOf2.value.length === 0)
+  const foreign = await evaluate(`window.api.getPpm({ppmId:${JSON.stringify(planId)}})`)
+  check(
+    'région 2 : le plan de la région 1 est introuvable même avec son identifiant',
+    !foreign.ok && foreign.error.code === 'PPM_NOT_FOUND',
+    foreign.ok ? 'VISIBLE !' : foreign.error.code
+  )
+
+  // Retour à la région 1 : les données sont toujours là
+  const backTo1 = await evaluate(
+    `window.api.openRegion({regionId:${JSON.stringify(r1.value.region.id)},password:${JSON.stringify(P1)}})`
+  )
+  const plansAgain = await evaluate('window.api.listPpms()')
+  check(
+    'retour à la région 1 : le plan est toujours là',
+    backTo1.ok && plansAgain.ok && plansAgain.value.length === 1
+  )
+
+  await evaluate('window.api.closeSession()')
+  const noRegion = await evaluate('window.api.listPpms()')
+  check(
+    'sans région ouverte : le plan est inaccessible (NO_ACTIVE_REGION)',
+    !noRegion.ok && noRegion.error.code === 'NO_ACTIVE_REGION',
+    noRegion.ok ? 'ACCESSIBLE !' : noRegion.error.code
+  )
+
   // 3. Entrées invalides et blocage
   const bad = await evaluate(`window.api.openRegion({regionId:123,password:{}})`)
   check(
@@ -224,6 +464,18 @@ try {
       registryText.includes(s)
     )
   )
+  const settings = JSON.parse(readFileSync(join(dataDir, 'settings.json'), 'utf8'))
+  check(
+    'settings.json contient uniquement le nom de la PRMP (aucun secret)',
+    settings.organizationName === ORG &&
+      Object.keys(settings).sort().join() === 'organizationName,version',
+    JSON.stringify(settings)
+  )
+  const readableAnywhere = dbFiles.some((f) => {
+    const bytes = readFileSync(join(dataDir, f))
+    return bytes.includes(OBJECT) || bytes.includes('SAF') || bytes.includes('CREATE TABLE')
+  })
+  check('aucun texte du plan (objet, service) ni schéma lisible dans les bases', !readableAnywhere)
   const header = readFileSync(join(dataDir, dbFiles[0])).subarray(0, 15).toString('latin1')
   check('bases chiffrées (pas d’en-tête SQLite lisible)', header !== 'SQLite format 3')
 

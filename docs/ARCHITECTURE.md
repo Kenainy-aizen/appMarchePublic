@@ -132,3 +132,80 @@ mot de passe -> scrypt -> clé qui déchiffre l'enveloppe -> clé de données (D
 - Aucune donnée ni aucun secret lisible dans les fichiers du dossier de données.
 - Fichier de données manquant, endommagé ou plus récent que l'application : messages clairs, sans rien exposer.
 - Échec de création : aucune entrée de registre et fichier de données nettoyé.
+
+## 10. Phase 4 — Plan de passation (PPM)
+
+### Fichiers
+
+    src/domain/ppm.ts                          + parseProcurementNature, findPpmLine, replacePpmLine, removePpmLine
+    src/domain/procedure.ts                    + parseProcedureMethod
+    src/application/ppm/                       list-ppms, get-ppm, create-ppm, save-ppm-line, remove-ppm-line,
+                                               record-ppm-update, delete-ppm ; views.ts (vues pour l'interface) ;
+                                               ppm-access.ts (plan introuvable, ligne utilisée)
+    src/shared/ppm-options.ts                  codes et libellés français (interface ET validation)
+    src/shared/ipc-schemas.ts                  schémas Zod des commandes PPM
+    src/main/ipc/register-ppm-handlers.ts      handlers (retours annotés : contrôle de compatibilité avec les DTO)
+    src/renderer/src/format.ts                 montants (« 1 500 000 Ar »), dates (JJ/MM/AAAA), lecture des saisies
+    src/renderer/src/screens/ppm/              PpmModule, PpmListScreen, PpmDetailScreen, PpmLineForm
+    tests/application/ppm.test.ts              cas d'utilisation (dépôts en mémoire)
+    tests/integration/ppm-real-database.test.ts  sur de vraies bases chiffrées
+    tests/renderer/ppm-*.test.tsx, format.test.ts  écrans et formatage
+
+### Canaux IPC de la Phase 4 (tous exigent une région ouverte, sinon `NO_ACTIVE_REGION`)
+
+| Canal             | Entrée                                   | Résultat                       |
+| ----------------- | ---------------------------------------- | ------------------------------ |
+| ppm:list          | —                                        | résumés (plus récent d'abord)  |
+| ppm:get           | `ppmId`                                  | plan avec lignes et totaux     |
+| ppm:create        | année, date d'élaboration ou null        | plan créé (numéro automatique) |
+| ppm:save-line     | plan, `lineId` (null = nouvelle), champs | plan mis à jour                |
+| ppm:remove-line   | `ppmId`, `lineId`                        | plan mis à jour                |
+| ppm:record-update | `ppmId`                                  | plan mis à jour                |
+| ppm:delete        | `ppmId`                                  | null                           |
+
+### Où vit chaque règle
+
+- Domaine : champs obligatoires, valeurs permises, ordre des dates, montants entiers, unicité des lignes, totaux.
+- Application : plan introuvable, interdiction de supprimer ce qui est utilisé, date du jour.
+- Frontière IPC (Zod) : types et tailles maximales seulement.
+- Interface : aucune règle métier ; elle découpe les saisies (comptes, montants) et affiche les messages reçus.
+
+### Garanties vérifiées par des tests
+
+- Sans région ouverte, aucune commande du plan ne fonctionne ; le plan d'une région est introuvable depuis une autre, même avec son identifiant.
+- Un plan survit à un redémarrage ; la numérotation continue ; modifier une ligne ne détache pas la procédure qui s'y rattache.
+- Contrôle par mutation : 5 régressions volontaires (suppression non vérifiée, ordre des lignes, modification devenant création, mise à jour non enregistrée, suppression sans confirmation) sont toutes détectées.
+- Test de bout en bout : parcours piloté par de vrais clics dans la vraie application (création, ligne, total en direct, mise à jour), puis contrôles d'API, d'isolation et de chiffrement des données saisies.
+
+## 11. Phase 4b — Nom de la PRMP et refonte de l'interface
+
+### Nom de la PRMP
+
+    src/domain/organization.ts                           parseOrganizationName (obligatoire, 120 caractères, espaces nettoyés)
+    src/application/ports.ts                             port OrganizationSettings (getName, saveName)
+    src/application/organization/save-organization.ts    cas d'utilisation (aucune région requise)
+    src/application/regions/list-regions.ts              la vue d'ensemble contient `organizationName`
+    src/infrastructure/json-organization-settings.ts     fichier `settings.json` (sans secret), illisible = ignoré
+    src/infrastructure/atomic-write.ts                   écriture atomique partagée avec le registre des régions
+    canal IPC organization:save                          entrée { name } -> { name }
+
+### Interface
+
+    src/renderer/src/styles/        tokens.css, base.css, components.css, layout.css (+ impression de la clé)
+    src/renderer/src/ui/            Icon (+ FlagMark), Alert, PageHeader, EmptyState
+    src/renderer/src/layouts/       AuthLayout (panneau + formulaire), AppShell (menu, bandeau, page)
+    src/renderer/src/screens/       SetupScreen (premier lancement), LoginScreen, CreateRegionScreen, RecoveryKeyScreen,
+                                    WorkspaceScreen, HomeSection, SettingsScreen, ppm/*
+    docs/captures/                  captures d'écran de l'application réelle (générées par `npm run e2e`)
+
+### Parcours
+
+- Aucune région : `SetupScreen` (nom de la PRMP + première région) -> clé de récupération (étape 3) -> connexion.
+- Régions existantes : `LoginScreen` ; « Créer une région » ouvre `CreateRegionScreen` (le nom de la PRMP est déjà connu).
+- Région ouverte : `WorkspaceScreen` (Accueil, Plan de passation, Paramètres ; Procédures et Contrats « Bientôt »).
+- Au démarrage, l'interface lit toujours la vue d'ensemble (pour le nom de la PRMP), même si une session est déjà ouverte.
+
+### Vérifications
+
+- 234 tests (domaine, cas d'utilisation, fichiers réels, interface) ; contrôle par mutation de 4 règles du nom de la PRMP.
+- Test de bout en bout : 53 vérifications dont la première utilisation entière pilotée par de vrais clics (nom, région, clé, connexion), la police embarquée, `settings.json` sans secret.

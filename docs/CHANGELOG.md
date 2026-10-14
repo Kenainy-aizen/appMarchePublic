@@ -2,6 +2,26 @@
 
 ## [Non publié]
 
+### Phase 4b — Nom de la PRMP et refonte de l'interface (2026-10-14)
+
+- Nouveau champ « Nom de la PRMP » à la première configuration (obligatoire), affiché sur les écrans d'accès et dans le bandeau, modifiable dans Paramètres ; stocké dans `settings.json` (ADR-025).
+- Interface entièrement refaite (ADR-026) : écrans d'accès en deux volets, menu latéral, bandeau PRMP / région, accueil avec la situation de la région, page Paramètres, tableaux de type registre, formulaires en panneaux, états vides, messages d'alerte, icônes, drapeau, police Public Sans embarquée.
+- Plan de passation : tableau resserré (nature et mode regroupés, dates prévisionnelles empilées, actions en colonne) pour tenir sans défilement horizontal.
+- Clé de récupération : affichée en groupes insécables (plus de coupure au milieu d'un groupe).
+- Electron lancé en français (sélecteurs de date).
+- Tests : 234 tests ; e2e 53 vérifications (première utilisation par l'interface réelle). Captures d'écran dans docs/captures/.
+- Dépendance ajoutée : @fontsource-variable/public-sans.
+
+### Phase 4 — Plan de passation (2026-10-09)
+
+- Domaine : remplacement et retrait de ligne, validation des codes de nature et de mode.
+- Application : 7 cas d'utilisation (liste, détail, création, ajout/modification de ligne, suppression de ligne, mise à jour, suppression du plan) ; une ligne ou un plan utilisé par une procédure ou un contrat ne peut pas être supprimé.
+- IPC : 7 canaux `ppm:*` avec validation Zod ; options et libellés français partagés (`shared/ppm-options.ts`).
+- Interface : module « Plan de passation (PPM) » (liste, création, détail avec totaux, formulaire de ligne avec services bénéficiaires et total en direct, suppression en deux clics).
+- Tests : 209 tests ; test de bout en bout étendu à 40 vérifications (clics réels dans la vraie application).
+- Mise en page élargie (tableaux) ; formulaires d'accès de la Phase 3 conservés étroits.
+- Aucune migration de base (ADR-024).
+
 ### Phase 3 — correctif de performance (2026-10-06)
 
 - Ouverture des bases quasi instantanée : clé transmise brute à SQLCipher, sans dérivation PBKDF2 (ADR-022). Suite de tests : environ 55 s -> 3 s ici ; les 4 dépassements de délai constatés sur le poste de l'utilisateur disparaissent.

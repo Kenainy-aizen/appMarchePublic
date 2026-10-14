@@ -1,7 +1,7 @@
 import { type Ariary, sumAriary } from './shared/ariary'
 import { DomainError } from './shared/errors'
 import { type IsoDate, parseIsoDate } from './shared/iso-date'
-import { optionalText, requiredText } from './shared/text'
+import { oneOf, optionalText, requiredText } from './shared/text'
 import { type ProcedureMethod } from './procedure'
 
 export const PROCUREMENT_NATURES = [
@@ -11,6 +11,11 @@ export const PROCUREMENT_NATURES = [
   'PRESTATIONS_INTELLECTUELLES'
 ] as const
 export type ProcurementNature = (typeof PROCUREMENT_NATURES)[number]
+
+/** Valide un code reçu de l'extérieur (interface, base) et le convertit en `ProcurementNature`. */
+export function parseProcurementNature(value: string): ProcurementNature {
+  return oneOf(value, PROCUREMENT_NATURES, 'nature du marché')
+}
 
 /** Service bénéficiaire (SOA) et la part du montant qui lui revient. */
 export interface Beneficiary {
@@ -142,4 +147,23 @@ export function addPpmLine(ppm: Ppm, line: PpmLine): Ppm {
     throw new DomainError('DUPLICATE_LINE', 'Cette ligne existe déjà dans le plan.')
   }
   return { ...ppm, lines: [...ppm.lines, line] }
+}
+
+export function findPpmLine(ppm: Ppm, lineId: string): PpmLine | null {
+  return ppm.lines.find((line) => line.id === lineId) ?? null
+}
+
+/** Remplace une ligne existante (même identifiant), en conservant sa position dans le plan. */
+export function replacePpmLine(ppm: Ppm, line: PpmLine): Ppm {
+  if (findPpmLine(ppm, line.id) === null) {
+    throw new DomainError('LINE_NOT_FOUND', 'Cette ligne n’existe pas dans le plan.')
+  }
+  return { ...ppm, lines: ppm.lines.map((existing) => (existing.id === line.id ? line : existing)) }
+}
+
+export function removePpmLine(ppm: Ppm, lineId: string): Ppm {
+  if (findPpmLine(ppm, lineId) === null) {
+    throw new DomainError('LINE_NOT_FOUND', 'Cette ligne n’existe pas dans le plan.')
+  }
+  return { ...ppm, lines: ppm.lines.filter((line) => line.id !== lineId) }
 }

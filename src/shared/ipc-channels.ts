@@ -8,5 +8,13 @@ export const IpcChannels = {
   regionsCreate: 'regions:create',
   sessionOpen: 'session:open',
   sessionClose: 'session:close',
-  sessionGet: 'session:get'
+  sessionGet: 'session:get',
+  organizationSave: 'organization:save',
+  ppmList: 'ppm:list',
+  ppmGet: 'ppm:get',
+  ppmCreate: 'ppm:create',
+  ppmSaveLine: 'ppm:save-line',
+  ppmRemoveLine: 'ppm:remove-line',
+  ppmRecordUpdate: 'ppm:record-update',
+  ppmDelete: 'ppm:delete'
 } as const

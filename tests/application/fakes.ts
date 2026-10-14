@@ -1,4 +1,5 @@
 import type {
+  OrganizationSettings,
   RegionKeyService,
   RegionRegistry,
   RegionSecrets,
@@ -100,5 +101,15 @@ export class FakeClock implements Clock {
   }
   nowMs(): number {
     return this.ms
+  }
+}
+
+export class InMemoryOrganizationSettings implements OrganizationSettings {
+  private name: string | null = null
+  getName(): string | null {
+    return this.name
+  }
+  saveName(name: string): void {
+    this.name = name
   }
 }

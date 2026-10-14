@@ -1,14 +1,15 @@
 import { useState, type SyntheticEvent } from 'react'
 import type { CreateRegionResultDto } from '@shared/api'
 import { messageOf, unwrap } from '../api-errors'
+import { Alert } from '../ui/Alert'
 
 interface Props {
   readonly suggestedName: string
   readonly onCreated: (result: CreateRegionResultDto) => void
-  /** Absent quand aucune région n'existe encore : il n'y a alors nulle part où revenir. */
-  readonly onCancel?: () => void
+  readonly onCancel: () => void
 }
 
+/** Ajout d'une région supplémentaire (le nom de la PRMP est déjà connu). */
 export function CreateRegionScreen({
   suggestedName,
   onCreated,
@@ -39,11 +40,11 @@ export function CreateRegionScreen({
   }
 
   return (
-    <form className="card" onSubmit={(event) => void submit(event)}>
-      <h2>Créer une région</h2>
-      <p className="hint">
-        Chaque région a son propre mot de passe. Les données de la région sont chiffrées avec ce mot
-        de passe : sans lui (ou sans la clé de récupération), elles sont illisibles.
+    <form onSubmit={(event) => void submit(event)}>
+      <h1>Créer une région</h1>
+      <p className="auth__lead">
+        Chaque région a son propre mot de passe. Sans lui, ni la clé de récupération, ses données
+        sont illisibles.
       </p>
 
       <label htmlFor="name">Nom de la région</label>
@@ -56,46 +57,47 @@ export function CreateRegionScreen({
         required
       />
 
-      <label htmlFor="new-password">Mot de passe (10 caractères minimum)</label>
-      <input
-        id="new-password"
-        type="password"
-        autoComplete="new-password"
-        value={password}
-        onChange={(event) => {
-          setPassword(event.target.value)
-        }}
-        required
-      />
-      <p className="hint">Une phrase de passe est recommandée, par exemple quatre ou cinq mots.</p>
+      <div className="form-row">
+        <div>
+          <label htmlFor="new-password">Mot de passe</label>
+          <input
+            id="new-password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value)
+            }}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="confirmation">Confirmer le mot de passe</label>
+          <input
+            id="confirmation"
+            type="password"
+            autoComplete="new-password"
+            value={confirmation}
+            onChange={(event) => {
+              setConfirmation(event.target.value)
+            }}
+            required
+          />
+        </div>
+      </div>
+      <p className="hint">
+        10 caractères minimum. Une phrase de passe est recommandée, par exemple quatre ou cinq mots.
+      </p>
 
-      <label htmlFor="confirmation">Confirmer le mot de passe</label>
-      <input
-        id="confirmation"
-        type="password"
-        autoComplete="new-password"
-        value={confirmation}
-        onChange={(event) => {
-          setConfirmation(event.target.value)
-        }}
-        required
-      />
-
-      {error && (
-        <p className="message message--error" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Alert tone="error">{error}</Alert>}
 
       <div className="actions">
         <button type="submit" disabled={pending}>
           {pending ? 'Création en cours…' : 'Créer la région'}
         </button>
-        {onCancel && (
-          <button type="button" className="secondary" onClick={onCancel} disabled={pending}>
-            Annuler
-          </button>
-        )}
+        <button type="button" className="secondary" onClick={onCancel} disabled={pending}>
+          Annuler
+        </button>
       </div>
     </form>
   )

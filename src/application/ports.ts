@@ -55,6 +55,13 @@ export interface RegionRegistry {
   add(region: RegisteredRegion): void
 }
 
+/** Réglages généraux de l'application, communs à toutes les régions (pas de secret). */
+export interface OrganizationSettings {
+  /** Nom de la PRMP, ou null tant qu'il n'a pas été renseigné. */
+  getName(): string | null
+  saveName(name: string): void
+}
+
 /** Les dépôts d'UNE région. Un cas d'utilisation métier ne reçoit jamais que ceux de la région active. */
 export interface RegionRepositories {
   readonly ppms: PpmRepository
