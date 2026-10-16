@@ -6,6 +6,16 @@ import { RegionSession } from '@application/region-session'
 import { CloseRegionUseCase, GetSessionUseCase } from '@application/regions/close-and-get-session'
 import { CreateRegionUseCase } from '@application/regions/create-region'
 import { ListRegionsUseCase } from '@application/regions/list-regions'
+import { CreateProcedureUseCase } from '@application/procedures/create-procedure'
+import { DeleteProcedureUseCase } from '@application/procedures/delete-procedure'
+import { GetProcedureUseCase } from '@application/procedures/get-procedure'
+import { ListPpmLinesUseCase, ListProceduresUseCase } from '@application/procedures/list-procedures'
+import {
+  ReopenStepUseCase,
+  SaveStepDatesUseCase,
+  ValidateStepUseCase
+} from '@application/procedures/step-use-cases'
+import { UpdateProcedureUseCase } from '@application/procedures/update-procedure'
 import { CreatePpmUseCase } from '@application/ppm/create-ppm'
 import { DeletePpmUseCase } from '@application/ppm/delete-ppm'
 import { GetPpmUseCase } from '@application/ppm/get-ppm'
@@ -63,7 +73,16 @@ function bootstrap(): RegionSession {
     savePpmLine: new SavePpmLineUseCase(session, ids),
     removePpmLine: new RemovePpmLineUseCase(session),
     recordPpmUpdate: new RecordPpmUpdateUseCase(session, clock),
-    deletePpm: new DeletePpmUseCase(session)
+    deletePpm: new DeletePpmUseCase(session),
+    listPpmLines: new ListPpmLinesUseCase(session),
+    listProcedures: new ListProceduresUseCase(session),
+    getProcedure: new GetProcedureUseCase(session),
+    createProcedure: new CreateProcedureUseCase(session, ids, clock),
+    updateProcedure: new UpdateProcedureUseCase(session),
+    saveStepDates: new SaveStepDatesUseCase(session),
+    validateStep: new ValidateStepUseCase(session, clock),
+    reopenStep: new ReopenStepUseCase(session),
+    deleteProcedure: new DeleteProcedureUseCase(session)
   })
   createMainWindow()
   return session

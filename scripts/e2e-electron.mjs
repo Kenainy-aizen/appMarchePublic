@@ -149,6 +149,14 @@ try {
       b.click()
       return true
     })()`)
+  const clickByLabel = (label) =>
+    evaluate(`(() => {
+      const b = document.querySelector('button[aria-label=' + JSON.stringify(${JSON.stringify(label)}) + ']')
+      if (!b || b.disabled) return false
+      b.click()
+      return true
+    })()`)
+  const REFERENCE = 'DCP-001/2026'
   const OBJECT = 'Gardiennage du site de Fianarantsoa'
   const ORG = 'PRMP du Ministère de l’Environnement, Fianarantsoa'
   const P1 = 'phrase de passe region un',
@@ -362,6 +370,88 @@ try {
   const shotSettings = await send('Page.captureScreenshot', { format: 'png' })
   writeFileSync(join(outputDir, '3c-parametres.png'), Buffer.from(shotSettings.data, 'base64'))
 
+  // 2c. Procédures de passation, pilotées par l'INTERFACE réelle
+  check('clic « Procédures » (menu)', await clickButton('Procédures'))
+  await waitUntil(
+    pageHas('Aucune procédure de passation pour cette région.'),
+    'liste vide des procédures'
+  )
+  check('interface : liste des procédures vide', true)
+  check('clic « Nouvelle procédure »', await clickButton('Nouvelle procédure'))
+  await waitUntil(
+    pageHas('Les cinq étapes sont créées automatiquement.'),
+    'formulaire de procédure'
+  )
+
+  const lineValue = await evaluate(
+    "[...document.querySelectorAll('#proc-line option')].map((o) => o.value).find((v) => v !== '') ?? ''"
+  )
+  check('la ligne du plan est proposée dans la liste de rattachement', lineValue !== '', lineValue)
+  await setField('#proc-line', lineValue)
+  await waitUntil(
+    `document.querySelector('#proc-object')?.value === ${JSON.stringify(OBJECT)}`,
+    'préremplissage par la ligne'
+  )
+  check(
+    'interface : choisir la ligne préremplit objet, mode et montant',
+    (await evaluate("document.querySelector('#proc-method')?.value")) === 'DCP' &&
+      (await evaluate("document.querySelector('#proc-estimate')?.value.replace(/\\s/g, '')")) ===
+        '1750000'
+  )
+  await setField('#proc-reference', REFERENCE)
+  check('clic « Créer la procédure »', await clickButton('Créer la procédure'))
+  await waitUntil(pageHas('Procédure ' + REFERENCE), 'détail de la procédure')
+  check(
+    'interface : procédure créée, non démarrée, rattachée à la ligne du plan',
+    (await evaluate(pageHas('0 sur 5 — Non démarrée'))) && (await evaluate(pageHas('Plan n° 1')))
+  )
+
+  check(
+    'interface : on ne peut pas valider la 2e étape avant la 1re (bouton inactif)',
+    !(await clickByLabel('Valider l’étape Ouverture des plis'))
+  )
+  check(
+    'interface : valider sans date réelle est refusé avec le motif',
+    (await clickByLabel('Valider l’étape Publication de l’avis')) &&
+      (await waitUntil(pageHas('Renseignez la date réelle'), 'refus sans date réelle'))
+  )
+
+  check(
+    'clic « Dates » de la publication',
+    await clickByLabel('Modifier les dates de Publication de l’avis')
+  )
+  await waitUntil('!!document.querySelector("#actual-PUBLICATION")', 'champs de dates')
+  await setField('#planned-PUBLICATION', '2026-01-05')
+  await setField('#actual-PUBLICATION', '2026-01-07')
+  check('clic « Enregistrer les dates »', await clickButton('Enregistrer les dates'))
+  await waitUntil(pageHas('07/01/2026'), 'date réelle affichée')
+  check(
+    'clic « Valider » la publication',
+    await clickByLabel('Valider l’étape Publication de l’avis')
+  )
+  await waitUntil(pageHas('1 sur 5 — En cours'), 'avancement 1 sur 5')
+  check(
+    'interface : publication validée, avancement 1 sur 5, prochaine étape signalée',
+    (await evaluate(pageHas('Validée le'))) &&
+      (await evaluate(pageHas('Prochaine étape à valider')))
+  )
+
+  check(
+    'clic « Rouvrir » la publication',
+    await clickByLabel('Rouvrir l’étape Publication de l’avis')
+  )
+  await waitUntil(pageHas('0 sur 5 — Non démarrée'), 'réouverture')
+  check('interface : la réouverture remet l’avancement à 0 sur 5', true)
+  check('clic « Valider » à nouveau', await clickByLabel('Valider l’étape Publication de l’avis'))
+  await waitUntil(pageHas('1 sur 5 — En cours'), 'revalidation')
+  const shotProc = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '4-procedure.png'), Buffer.from(shotProc.data, 'base64'))
+
+  check('clic « Retour à la liste »', await clickButton('Retour à la liste'))
+  await waitUntil(pageHas('1 sur 5 — En cours'), 'liste avec la procédure')
+  const shotProcList = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '4a-procedures.png'), Buffer.from(shotProcList.data, 'base64'))
+
   // Même parcours côté API (la session de la région 1 est ouverte par l'interface)
   const plans = await evaluate('window.api.listPpms()')
   check(
@@ -401,6 +491,48 @@ try {
     unknownLine.ok ? '' : unknownLine.error.code
   )
 
+  const procs = await evaluate('window.api.listProcedures()')
+  check(
+    'API : une procédure, 1 étape validée sur 5',
+    procs.ok &&
+      procs.value.length === 1 &&
+      procs.value[0].validatedCount === 1 &&
+      procs.value[0].reference === REFERENCE,
+    JSON.stringify(procs.ok ? procs.value[0] : procs.error)
+  )
+  const procId = procs.value[0].id
+  const dupRef = await evaluate(
+    `window.api.createProcedure({reference:${JSON.stringify('  dcp-001/2026 ')},object:'x',method:'DAO',ppmLineId:null,estimatedAmount:null})`
+  )
+  check(
+    'référence déjà utilisée refusée (majuscules et espaces ignorés)',
+    !dupRef.ok && dupRef.error.code === 'DUPLICATE_REFERENCE',
+    dupRef.ok ? 'ACCEPTÉE !' : dupRef.error.code
+  )
+  const outOfOrder = await evaluate(
+    `window.api.validateStep({procedureId:${JSON.stringify(procId)},step:'EVALUATION'})`
+  )
+  check(
+    'API : valider une étape avant la précédente est refusé',
+    !outOfOrder.ok && outOfOrder.error.code === 'PREVIOUS_STEP_NOT_VALIDATED',
+    outOfOrder.ok ? 'ACCEPTÉE !' : outOfOrder.error.code
+  )
+  const badStep = await evaluate(
+    `window.api.validateStep({procedureId:${JSON.stringify(procId)},step:'AUTRE'})`
+  )
+  check(
+    'API : étape inconnue rejetée à la frontière',
+    !badStep.ok && badStep.error.code === 'INVALID_REQUEST'
+  )
+  const lineInUse = await evaluate(
+    `window.api.removePpmLine({ppmId:${JSON.stringify(planId)},lineId:${JSON.stringify(lineValue)}})`
+  )
+  check(
+    'la ligne du plan rattachée à la procédure ne peut plus être supprimée',
+    !lineInUse.ok && lineInUse.error.code === 'PPM_LINE_IN_USE',
+    lineInUse.ok ? 'SUPPRIMÉE !' : lineInUse.error.code
+  )
+
   // Isolation : la région 2 ne voit rien du plan de la région 1
   const toRegion2 = await evaluate(
     `window.api.openRegion({regionId:${JSON.stringify(r2.value.region.id)},password:${JSON.stringify(P2)}})`
@@ -408,6 +540,16 @@ try {
   check('connexion à la région 2', toRegion2.ok, toRegion2.ok ? '' : toRegion2.error.message)
   const plansOf2 = await evaluate('window.api.listPpms()')
   check('région 2 : aucun plan visible', plansOf2.ok && plansOf2.value.length === 0)
+  const procsOf2 = await evaluate('window.api.listProcedures()')
+  check('région 2 : aucune procédure visible', procsOf2.ok && procsOf2.value.length === 0)
+  const foreignProc = await evaluate(
+    `window.api.getProcedure({procedureId:${JSON.stringify(procId)}})`
+  )
+  check(
+    'région 2 : la procédure de la région 1 est introuvable même avec son identifiant',
+    !foreignProc.ok && foreignProc.error.code === 'PROCEDURE_NOT_FOUND',
+    foreignProc.ok ? 'VISIBLE !' : foreignProc.error.code
+  )
   const foreign = await evaluate(`window.api.getPpm({ppmId:${JSON.stringify(planId)}})`)
   check(
     'région 2 : le plan de la région 1 est introuvable même avec son identifiant',
@@ -419,10 +561,15 @@ try {
   const backTo1 = await evaluate(
     `window.api.openRegion({regionId:${JSON.stringify(r1.value.region.id)},password:${JSON.stringify(P1)}})`
   )
+  const procsAgain = await evaluate('window.api.listProcedures()')
   const plansAgain = await evaluate('window.api.listPpms()')
   check(
     'retour à la région 1 : le plan est toujours là',
     backTo1.ok && plansAgain.ok && plansAgain.value.length === 1
+  )
+  check(
+    'retour à la région 1 : la procédure et son avancement sont toujours là',
+    procsAgain.ok && procsAgain.value.length === 1 && procsAgain.value[0].validatedCount === 1
   )
 
   await evaluate('window.api.closeSession()')
@@ -473,7 +620,12 @@ try {
   )
   const readableAnywhere = dbFiles.some((f) => {
     const bytes = readFileSync(join(dataDir, f))
-    return bytes.includes(OBJECT) || bytes.includes('SAF') || bytes.includes('CREATE TABLE')
+    return (
+      bytes.includes(OBJECT) ||
+      bytes.includes('SAF') ||
+      bytes.includes(REFERENCE) ||
+      bytes.includes('CREATE TABLE')
+    )
   })
   check('aucun texte du plan (objet, service) ni schéma lisible dans les bases', !readableAnywhere)
   const header = readFileSync(join(dataDir, dbFiles[0])).subarray(0, 15).toString('latin1')

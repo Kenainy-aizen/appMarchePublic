@@ -2,12 +2,17 @@ import type { z } from 'zod'
 import type {
   appInfoSchema,
   createPpmInputSchema,
+  createProcedureInputSchema,
   createRegionInputSchema,
   openRegionInputSchema,
   saveOrganizationInputSchema,
   ppmIdInputSchema,
+  procedureIdInputSchema,
   removePpmLineInputSchema,
-  savePpmLineInputSchema
+  saveStepDatesInputSchema,
+  savePpmLineInputSchema,
+  stepInputSchema,
+  updateProcedureInputSchema
 } from './ipc-schemas'
 
 // Types uniquement : aucun code n'est émis dans les bundles preload / renderer.
@@ -19,6 +24,11 @@ export type PpmIdInputDto = z.infer<typeof ppmIdInputSchema>
 export type CreatePpmInputDto = z.infer<typeof createPpmInputSchema>
 export type SavePpmLineInputDto = z.infer<typeof savePpmLineInputSchema>
 export type RemovePpmLineInputDto = z.infer<typeof removePpmLineInputSchema>
+export type ProcedureIdInputDto = z.infer<typeof procedureIdInputSchema>
+export type CreateProcedureInputDto = z.infer<typeof createProcedureInputSchema>
+export type UpdateProcedureInputDto = z.infer<typeof updateProcedureInputSchema>
+export type SaveStepDatesInputDto = z.infer<typeof saveStepDatesInputSchema>
+export type StepInputDto = z.infer<typeof stepInputSchema>
 
 /** Une région telle que l'interface la connaît : jamais de clé ni de secret. */
 export interface RegionSummaryDto {
@@ -85,6 +95,50 @@ export interface PpmDetailDto extends PpmSummaryDto {
   readonly lines: readonly PpmLineDto[]
 }
 
+/** Résumé d'une procédure (liste). */
+export interface ProcedureSummaryDto {
+  readonly id: string
+  readonly reference: string
+  readonly object: string
+  readonly method: string
+  readonly estimatedAmount: number | null
+  readonly createdOn: string
+  readonly validatedCount: number
+  readonly totalSteps: number
+  /** NOT_STARTED, IN_PROGRESS ou COMPLETED. */
+  readonly status: string
+  /** Prochaine étape à valider, ou null si la procédure est terminée. */
+  readonly nextStep: string | null
+}
+
+export interface ProcedureStepDto {
+  readonly kind: string
+  readonly plannedDate: string | null
+  readonly actualDate: string | null
+  readonly validatedOn: string | null
+}
+
+/** Ligne du plan de passation à laquelle une procédure se rattache. */
+export interface PpmLineRefDto {
+  readonly ppmId: string
+  readonly ppmNumber: number
+  readonly ppmYear: number
+  readonly lineId: string
+  readonly object: string
+  readonly total: number
+}
+
+export interface ProcedureDetailDto extends ProcedureSummaryDto {
+  readonly ppmLine: PpmLineRefDto | null
+  readonly steps: readonly ProcedureStepDto[]
+}
+
+/** Une ligne de plan proposée dans la liste de rattachement d'une procédure. */
+export interface PpmLineChoiceDto extends PpmLineRefDto {
+  readonly nature: string
+  readonly method: string | null
+}
+
 /** Erreur renvoyée à l'interface : `message` est en français et sans détail technique. */
 export interface ApiError {
   readonly code: string
@@ -112,4 +166,13 @@ export interface PrmpApi {
   removePpmLine(input: RemovePpmLineInputDto): Promise<ApiResult<PpmDetailDto>>
   recordPpmUpdate(input: PpmIdInputDto): Promise<ApiResult<PpmDetailDto>>
   deletePpm(input: PpmIdInputDto): Promise<ApiResult<null>>
+  listPpmLines(): Promise<ApiResult<readonly PpmLineChoiceDto[]>>
+  listProcedures(): Promise<ApiResult<readonly ProcedureSummaryDto[]>>
+  getProcedure(input: ProcedureIdInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  createProcedure(input: CreateProcedureInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  updateProcedure(input: UpdateProcedureInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  saveStepDates(input: SaveStepDatesInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  validateStep(input: StepInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  reopenStep(input: StepInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  deleteProcedure(input: ProcedureIdInputDto): Promise<ApiResult<null>>
 }

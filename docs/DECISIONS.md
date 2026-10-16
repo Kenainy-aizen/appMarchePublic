@@ -208,3 +208,18 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Organisation du code : `styles/` (jetons, base, composants, mise en page), `ui/` (Icon, Alert, PageHeader, EmptyState), `layouts/` (AuthLayout, AppShell). Icônes dessinées en SVG intégré (aucune dépendance).
 - Langue : Electron est lancé en français (`--lang=fr`) pour les sélecteurs de date. Les dates restent au format jour/mois/année.
 - Limites connues : mise en page conçue pour une fenêtre de 960 px de large minimum ; pas de thème sombre ; non vérifiée sur Windows 10 (rendu des polices et de l'échelle d'affichage).
+
+## ADR-027 — Procédures de passation : règles de succession des étapes (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-10-15). Le manuel SIGMP ne décrit pas ces règles ; elles sont posées par bon sens administratif et se modifient en un seul endroit (`domain/procedure.ts`).
+- Étapes (ordre fixe, 5 par procédure, quel que soit le mode, AMI et APQ compris par simplification) : publication de l'avis, ouverture des plis, évaluation des offres, attribution, approbation du marché.
+- Valider une étape exige : (1) la précédente validée ; (2) une date réelle renseignée. La date de validation est celle du jour.
+- Une étape validée est verrouillée (dates non modifiables) ; on peut la rouvrir seulement si aucune étape suivante n'est validée.
+- Dates réelles : jamais avant celle de l'étape précédente, jamais après celle de l'étape suivante. Dates prévues : libres (c'est un planning).
+- Mode de passation : modifiable tant qu'aucune étape n'est validée.
+- Référence : unique dans la région (majuscules et espaces ignorés) ; une même référence peut exister dans une autre région.
+- Rattachement à une ligne du plan : facultatif (procédure hors plan permise) ; choisir une ligne préremplit objet, mode et montant estimé (sans écraser une saisie). Plusieurs procédures peuvent se rattacher à la même ligne (relance après un échec).
+- Suppression : refusée si un contrat est lié à la procédure ; sinon définitive (étapes et offres comprises), après confirmation en deux clics. Une ligne de plan rattachée à une procédure ne peut plus être supprimée (règle de la Phase 4, désormais effective).
+- Avancement dérivé, jamais stocké : non démarrée (0 étape validée), en cours, terminée (5 sur 5).
+- Pas encore pris en compte (Phase 6) : l'attribution exigera une offre retenue ; les candidats et offres se gèrent dans la Phase 6.
+- Aucune migration : le schéma de la migration 001 couvrait déjà les procédures et leurs étapes.

@@ -30,7 +30,33 @@ const api: PrmpApi = {
       PrmpApi['recordPpmUpdate']
     >,
   deletePpm: (input) =>
-    ipcRenderer.invoke(IpcChannels.ppmDelete, input) as ReturnType<PrmpApi['deletePpm']>
+    ipcRenderer.invoke(IpcChannels.ppmDelete, input) as ReturnType<PrmpApi['deletePpm']>,
+  listPpmLines: () =>
+    ipcRenderer.invoke(IpcChannels.ppmLineList) as ReturnType<PrmpApi['listPpmLines']>,
+  listProcedures: () =>
+    ipcRenderer.invoke(IpcChannels.procedureList) as ReturnType<PrmpApi['listProcedures']>,
+  getProcedure: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureGet, input) as ReturnType<PrmpApi['getProcedure']>,
+  createProcedure: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureCreate, input) as ReturnType<
+      PrmpApi['createProcedure']
+    >,
+  updateProcedure: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureUpdate, input) as ReturnType<
+      PrmpApi['updateProcedure']
+    >,
+  saveStepDates: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureSaveStepDates, input) as ReturnType<
+      PrmpApi['saveStepDates']
+    >,
+  validateStep: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureValidateStep, input) as ReturnType<
+      PrmpApi['validateStep']
+    >,
+  reopenStep: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureReopenStep, input) as ReturnType<PrmpApi['reopenStep']>,
+  deleteProcedure: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureDelete, input) as ReturnType<PrmpApi['deleteProcedure']>
 }
 
 contextBridge.exposeInMainWorld('api', api)
