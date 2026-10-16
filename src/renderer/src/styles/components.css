@@ -411,6 +411,17 @@ tfoot td {
   align-items: stretch;
 }
 
+.row-actions--inline {
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* La cellule d'actions prend juste la place de ses boutons : le reste va aux colonnes de contenu. */
+td:has(> .row-actions--inline) {
+  width: 1%;
+}
+
 .dates {
   display: grid;
   gap: 0.125rem;
@@ -479,4 +490,53 @@ tfoot td {
 .print-title,
 .print-note {
   display: none;
+}
+
+/* ---------- Avancement d'une procédure ---------- */
+.progress {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.625rem;
+  align-items: center;
+}
+
+.meter {
+  display: inline-flex;
+  gap: 0.1875rem;
+}
+
+.meter__cell {
+  width: 0.875rem;
+  height: 0.5rem;
+  background: var(--line);
+  border-radius: 2px;
+}
+
+.meter__cell.is-done {
+  background: var(--forest-600);
+}
+
+.badge {
+  display: inline-flex;
+  white-space: nowrap;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.badge--done {
+  color: var(--forest-800);
+  background: var(--forest-100);
+}
+
+tbody tr.is-next {
+  background: var(--forest-50);
+  box-shadow: inset 3px 0 0 var(--forest-600);
+}
+
+td .visually-hidden + input {
+  min-width: 9.5rem;
 }

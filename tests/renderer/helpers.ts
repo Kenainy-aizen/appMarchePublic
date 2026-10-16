@@ -34,7 +34,16 @@ export function installApiMock(): ApiMock {
     savePpmLine: vi.fn<PrmpApi['savePpmLine']>(),
     removePpmLine: vi.fn<PrmpApi['removePpmLine']>(),
     recordPpmUpdate: vi.fn<PrmpApi['recordPpmUpdate']>(),
-    deletePpm: vi.fn<PrmpApi['deletePpm']>().mockResolvedValue(ok(null))
+    deletePpm: vi.fn<PrmpApi['deletePpm']>().mockResolvedValue(ok(null)),
+    listPpmLines: vi.fn<PrmpApi['listPpmLines']>().mockResolvedValue(ok([])),
+    listProcedures: vi.fn<PrmpApi['listProcedures']>().mockResolvedValue(ok([])),
+    getProcedure: vi.fn<PrmpApi['getProcedure']>(),
+    createProcedure: vi.fn<PrmpApi['createProcedure']>(),
+    updateProcedure: vi.fn<PrmpApi['updateProcedure']>(),
+    saveStepDates: vi.fn<PrmpApi['saveStepDates']>(),
+    validateStep: vi.fn<PrmpApi['validateStep']>(),
+    reopenStep: vi.fn<PrmpApi['reopenStep']>(),
+    deleteProcedure: vi.fn<PrmpApi['deleteProcedure']>().mockResolvedValue(ok(null))
   }
   Object.defineProperty(window, 'api', { value: api, configurable: true, writable: true })
   return api

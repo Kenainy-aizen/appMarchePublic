@@ -114,7 +114,7 @@ describe('espace de travail', () => {
     expect(screen.getByText('PRMP de Fianarantsoa')).toBeDefined()
   })
 
-  it('la navigation signale la page courante et laisse les modules à venir inactifs', async () => {
+  it('la navigation signale la page courante ; seul le module à venir reste inactif', async () => {
     const api = installApiMock()
     api.getRegionsOverview.mockResolvedValue(ok(withOne))
     api.getSession.mockResolvedValue(ok({ region: { id: 'r1', name: 'Région 1' } }))
@@ -124,11 +124,9 @@ describe('espace de travail', () => {
     expect(within(nav).getByRole('button', { name: 'Accueil' }).getAttribute('aria-current')).toBe(
       'page'
     )
-    expect(
-      within(nav)
-        .getByRole('button', { name: /^Procédures/ })
-        .hasAttribute('disabled')
-    ).toBe(true)
+    expect(within(nav).getByRole('button', { name: 'Procédures' }).hasAttribute('disabled')).toBe(
+      false
+    )
     expect(
       within(nav)
         .getByRole('button', { name: /^Contrats/ })

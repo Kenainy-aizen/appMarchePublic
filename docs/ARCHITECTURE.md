@@ -209,3 +209,45 @@ mot de passe -> scrypt -> clé qui déchiffre l'enveloppe -> clé de données (D
 
 - 234 tests (domaine, cas d'utilisation, fichiers réels, interface) ; contrôle par mutation de 4 règles du nom de la PRMP.
 - Test de bout en bout : 53 vérifications dont la première utilisation entière pilotée par de vrais clics (nom, région, clé, connexion), la police embarquée, `settings.json` sans secret.
+
+## 12. Phase 5 — Procédures de passation
+
+### Fichiers
+
+    src/domain/procedure.ts                      + procedureProgress, setStepDates, validateStep, reopenStep,
+                                                   updateProcedureDetails, STEP_LABELS, parseStepKind
+    src/application/procedures/                  list-procedures (+ lignes du plan), get-procedure, create-procedure,
+                                                 update-procedure, step-use-cases (dates, valider, rouvrir),
+                                                 delete-procedure ; views.ts ; procedure-access.ts
+    src/shared/procedure-options.ts              étapes, statuts et libellés français (un test les compare au domaine)
+    src/main/ipc/register-procedure-handlers.ts  9 canaux
+    src/renderer/src/screens/procedures/         ProcedureModule, ProcedureListScreen, ProcedureForm, ProcedureDetailScreen
+    src/renderer/src/ui/ProgressBadge.tsx        cases d'avancement + « n sur 5 — statut »
+    tests/application/procedures.test.ts, tests/integration/procedure-real-database.test.ts, tests/renderer/procedure-screens.test.tsx
+
+### Canaux IPC (tous exigent une région ouverte, sinon `NO_ACTIVE_REGION`)
+
+| Canal                     | Entrée                                                 | Résultat                             |
+| ------------------------- | ------------------------------------------------------ | ------------------------------------ |
+| ppm:list-lines            | —                                                      | lignes de plan à plat (rattachement) |
+| procedure:list            | —                                                      | résumés                              |
+| procedure:get             | `procedureId`                                          | détail + étapes                      |
+| procedure:create          | référence, objet, mode, ligne du plan ou null, montant | détail                               |
+| procedure:update          | idem + `procedureId`                                   | détail                               |
+| procedure:save-step-dates | `procedureId`, étape, date prévue, date réelle         | détail                               |
+| procedure:validate-step   | `procedureId`, étape                                   | détail                               |
+| procedure:reopen-step     | `procedureId`, étape                                   | détail                               |
+| procedure:delete          | `procedureId`                                          | null                                 |
+
+### Où vit chaque règle
+
+- Domaine : toutes les règles de succession des étapes (ADR-027), verrouillage du mode, avancement dérivé.
+- Application : procédure ou ligne du plan introuvable, référence unique, suppression interdite si un contrat est lié, date du jour.
+- Frontière IPC (Zod) : types, tailles, étape dans la liste connue.
+- Interface : aucune règle ; elle désactive « Valider » et « Rouvrir » quand l'action est impossible (confort), le domaine restant l'autorité.
+
+### Garanties vérifiées par des tests
+
+- Contrôle par mutation : 8 régressions volontaires (validation hors ordre, sans date réelle, réouverture interdite, dates verrouillées, mode verrouillé, référence en double, bouton « Valider » trop permissif, suppression d'une procédure liée à un contrat) sont toutes détectées.
+- Une procédure et son avancement survivent à un redémarrage ; une procédure d'une région est introuvable depuis une autre ; la ligne du plan rattachée ne peut plus être supprimée.
+- Test de bout en bout : 78 vérifications, dont le parcours entier de la procédure par de vrais clics (création préremplie par la ligne du plan, refus sans date, dates, validation, réouverture).

@@ -5,6 +5,7 @@ import { AppShell, type SectionId } from '../layouts/AppShell'
 import { Alert } from '../ui/Alert'
 import { HomeSection } from './HomeSection'
 import { PpmModule } from './ppm/PpmModule'
+import { ProcedureModule } from './procedures/ProcedureModule'
 import { SettingsScreen } from './SettingsScreen'
 
 interface Props {
@@ -53,6 +54,7 @@ export function WorkspaceScreen({
         />
       )}
       {section === 'ppm' && <PpmModule />}
+      {section === 'procedures' && <ProcedureModule />}
       {section === 'settings' && (
         <SettingsScreen
           organizationName={organizationName}

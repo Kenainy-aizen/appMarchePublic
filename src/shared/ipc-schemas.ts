@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { METHOD_CODES, NATURE_CODES } from './ppm-options'
+import { STEP_CODES } from './procedure-options'
 
 /**
  * Schémas Zod du contrat IPC. Utilisés UNIQUEMENT dans le processus principal
@@ -57,3 +58,29 @@ export const savePpmLineInputSchema = z.object({
 })
 
 export const removePpmLineInputSchema = z.object({ ppmId: idField, lineId: idField })
+
+// --- Procédures de passation ---
+export const procedureIdInputSchema = z.object({ procedureId: idField })
+
+export const createProcedureInputSchema = z.object({
+  reference: z.string().max(100),
+  object: z.string().max(2000),
+  method: z.enum(METHOD_CODES),
+  /** Ligne du plan de passation à laquelle la procédure se rattache (facultatif). */
+  ppmLineId: idField.nullable(),
+  estimatedAmount: amountField.nullable()
+})
+
+export const updateProcedureInputSchema = createProcedureInputSchema.extend({
+  procedureId: idField
+})
+
+export const saveStepDatesInputSchema = z.object({
+  procedureId: idField,
+  step: z.enum(STEP_CODES),
+  plannedDate: dateField,
+  actualDate: dateField
+})
+
+/** Valider ou rouvrir une étape. */
+export const stepInputSchema = z.object({ procedureId: idField, step: z.enum(STEP_CODES) })

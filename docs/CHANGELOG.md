@@ -2,6 +2,15 @@
 
 ## [Non publié]
 
+### Phase 5 — Procédures de passation (2026-10-15)
+
+- Domaine : avancement dérivé, dates d'étape, validation, réouverture, modification de l'en-tête, avec les règles de succession (ADR-027).
+- Application : 9 cas d'utilisation (liste, détail, création, modification, dates, validation, réouverture, suppression, lignes du plan à rattacher) ; référence unique par région ; suppression refusée si un contrat est lié.
+- IPC : 9 canaux `procedure:*` et `ppm:list-lines`.
+- Interface : l'entrée « Procédures » du menu est active ; liste avec avancement, création préremplie par la ligne du plan, détail avec les cinq étapes (dates prévue et réelle, valider, rouvrir), modification de l'en-tête, suppression en deux clics.
+- Tests : 307 tests ; e2e 78 vérifications ; 8 mutations détectées. Captures : docs/captures/07 et 08.
+- Aucune migration de base.
+
 ### Phase 4b — Nom de la PRMP et refonte de l'interface (2026-10-14)
 
 - Nouveau champ « Nom de la PRMP » à la première configuration (obligatoire), affiché sur les écrans d'accès et dans le bandeau, modifiable dans Paramètres ; stocké dans `settings.json` (ADR-025).
