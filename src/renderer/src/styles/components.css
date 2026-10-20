@@ -411,6 +411,10 @@ tfoot td {
   align-items: stretch;
 }
 
+.row-actions--inline button {
+  white-space: nowrap;
+}
+
 .row-actions--inline {
   flex-flow: row nowrap;
   align-items: center;

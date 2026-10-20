@@ -452,6 +452,148 @@ try {
   const shotProcList = await send('Page.captureScreenshot', { format: 'png' })
   writeFileSync(join(outputDir, '4a-procedures.png'), Buffer.from(shotProcList.data, 'base64'))
 
+  // 2d. Candidats et offres, pilotés par l'INTERFACE réelle
+  check('clic « Candidats » (menu)', await clickButton('Candidats'))
+  await waitUntil(
+    pageHas('Aucun candidat enregistré pour cette région.'),
+    'liste vide des candidats'
+  )
+  check('interface : liste des candidats vide', true)
+
+  const createCandidateViaUi = async (name, nif) => {
+    await clickButton('Nouveau candidat')
+    await waitUntil(pageHas('Seul le nom est obligatoire'), 'formulaire de candidat')
+    await setField('#cand-name', name)
+    await setField('#cand-nif', nif)
+    await clickButton('Créer le candidat')
+  }
+  await createCandidateViaUi('SARL Alpha', '1234567890')
+  await waitUntil(pageHas('SARL Alpha'), 'candidat Alpha dans la liste')
+  await createCandidateViaUi('Beta Construction', '555')
+  await waitUntil(pageHas('Beta Construction'), 'candidat Beta dans la liste')
+  check(
+    'interface : deux candidats créés (affichés par ordre alphabétique)',
+    (await evaluate(
+      "[...document.querySelectorAll('tbody tr td:first-child strong')].map((e) => e.textContent).join('|')"
+    )) === 'Beta Construction|SARL Alpha'
+  )
+  const shotCandidates = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '5-candidats.png'), Buffer.from(shotCandidates.data, 'base64'))
+
+  await clickButton('Nouveau candidat')
+  await waitUntil(pageHas('Seul le nom est obligatoire'), 'formulaire (doublon)')
+  await setField('#cand-name', 'Autre société')
+  await setField('#cand-nif', '12 34 567 890')
+  await clickButton('Créer le candidat')
+  await waitUntil(pageHas('déjà enregistré avec le NIF'), 'refus du NIF en double')
+  check('interface : un NIF déjà utilisé est refusé (espaces ignorés)', true)
+  await clickButton('Annuler')
+  await waitUntil(pageHas('Candidats'), 'retour à la liste des candidats')
+
+  // Offres dans la procédure
+  check('clic « Procédures » (menu)', await clickButton('Procédures'))
+  await waitUntil(pageHas('1 sur 5 — En cours'), 'liste avec la procédure')
+  check('ouverture de la procédure', await clickByLabel('Ouvrir la procédure ' + REFERENCE))
+  await waitUntil(pageHas('Offres reçues'), 'panneau des offres')
+  const optionValue = (label) =>
+    evaluate(
+      `[...document.querySelectorAll('#bid-candidate option')].find((o) => o.textContent === ${JSON.stringify(label)})?.value ?? ''`
+    )
+  const addBidViaUi = async (candidateLabel, amountText) => {
+    await waitUntil(
+      `!!document.querySelector('#bid-candidate option[value]:not([value=""])')`,
+      'candidats proposés'
+    )
+    await setField('#bid-candidate', await optionValue(candidateLabel))
+    await setField('#bid-amount', amountText)
+    return clickButton('Ajouter l’offre')
+  }
+  check('ajout de l’offre de SARL Alpha (900 000 Ar)', await addBidViaUi('SARL Alpha', '900 000'))
+  await waitUntil(pageHas('900 000 Ar'), 'offre Alpha affichée')
+  check(
+    'ajout de l’offre de Beta Construction (800 000 Ar)',
+    await addBidViaUi('Beta Construction', '800000')
+  )
+  await waitUntil(pageHas('800 000 Ar'), 'offre Beta affichée')
+  check(
+    'interface : deux offres affichées, aucun candidat restant à proposer',
+    await evaluate(pageHas('Tous les candidats enregistrés ont déjà déposé une offre'))
+  )
+
+  // Amener la procédure jusqu'à l'attribution (la publication est déjà validée)
+  const validateStepViaUi = async (kind, label, date) => {
+    await clickByLabel(`Modifier les dates de ${label}`)
+    await waitUntil(`!!document.querySelector("#actual-${kind}")`, `champs de dates (${label})`)
+    await setField(`#actual-${kind}`, date)
+    await clickButton('Enregistrer les dates')
+    await waitUntil(pageHas(date.split('-').reverse().join('/')), `date réelle (${label})`)
+    return clickByLabel(`Valider l’étape ${label}`)
+  }
+  check(
+    'validation de l’ouverture des plis',
+    await validateStepViaUi('OUVERTURE_PLIS', 'Ouverture des plis', '2026-01-10')
+  )
+  await waitUntil(pageHas('2 sur 5 — En cours'), '2 sur 5')
+  check(
+    'validation de l’évaluation',
+    await validateStepViaUi('EVALUATION', 'Évaluation des offres', '2026-01-15')
+  )
+  await waitUntil(pageHas('3 sur 5 — En cours'), '3 sur 5')
+
+  await clickByLabel('Modifier les dates de Attribution')
+  await waitUntil(
+    '!!document.querySelector("#actual-ATTRIBUTION")',
+    'champs de dates (attribution)'
+  )
+  await setField('#actual-ATTRIBUTION', '2026-01-20')
+  await clickButton('Enregistrer les dates')
+  await waitUntil(pageHas('20/01/2026'), 'date réelle de l’attribution')
+  check(
+    'clic « Valider » l’attribution sans offre retenue',
+    await clickByLabel('Valider l’étape Attribution')
+  )
+  await waitUntil(pageHas('Désignez l’offre retenue'), 'refus sans offre retenue')
+  check('interface : valider l’attribution sans offre retenue est refusé avec le motif', true)
+
+  check(
+    'clic « Retenir » l’offre de Beta Construction',
+    await clickByLabel('Retenir l’offre de Beta Construction')
+  )
+  await waitUntil(pageHas('Offre retenue'), 'offre retenue')
+  check('clic « Valider » l’attribution', await clickByLabel('Valider l’étape Attribution'))
+  await waitUntil(pageHas('4 sur 5 — En cours'), '4 sur 5')
+  await waitUntil(pageHas('les offres ne peuvent plus être modifiées'), 'verrou des offres')
+  check(
+    'interface : attribution validée, offres verrouillées (retrait impossible)',
+    !(await clickByLabel('Retirer l’offre de SARL Alpha'))
+  )
+  const shotBids = await send('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: true
+  })
+  writeFileSync(join(outputDir, '5a-offres.png'), Buffer.from(shotBids.data, 'base64'))
+
+  check('clic « Rouvrir » l’attribution', await clickByLabel('Rouvrir l’étape Attribution'))
+  await waitUntil(pageHas('3 sur 5 — En cours'), 'attribution rouverte')
+  check(
+    'interface : la réouverture libère les offres',
+    await evaluate("!document.body.innerText.includes('les offres ne peuvent plus être modifiées')")
+  )
+  check(
+    'clic « Valider » l’attribution à nouveau',
+    await clickByLabel('Valider l’étape Attribution')
+  )
+  await waitUntil(pageHas('4 sur 5 — En cours'), 'attribution revalidée')
+
+  check('clic « Retour à la liste »', await clickButton('Retour à la liste'))
+  await waitUntil(pageHas('Beta Construction'), 'attributaire dans la liste des procédures')
+  check(
+    'interface : la liste des procédures indique l’attributaire',
+    await evaluate(
+      "[...document.querySelectorAll('tbody tr')].some((r) => r.innerText.includes('Beta Construction') && r.innerText.includes('4 sur 5'))"
+    )
+  )
+
   // Même parcours côté API (la session de la région 1 est ouverte par l'interface)
   const plans = await evaluate('window.api.listPpms()')
   check(
@@ -493,10 +635,11 @@ try {
 
   const procs = await evaluate('window.api.listProcedures()')
   check(
-    'API : une procédure, 1 étape validée sur 5',
+    'API : une procédure, 4 étapes validées sur 5, attribuée à Beta Construction',
     procs.ok &&
       procs.value.length === 1 &&
-      procs.value[0].validatedCount === 1 &&
+      procs.value[0].validatedCount === 4 &&
+      procs.value[0].awardedCandidate === 'Beta Construction' &&
       procs.value[0].reference === REFERENCE,
     JSON.stringify(procs.ok ? procs.value[0] : procs.error)
   )
@@ -509,13 +652,34 @@ try {
     !dupRef.ok && dupRef.error.code === 'DUPLICATE_REFERENCE',
     dupRef.ok ? 'ACCEPTÉE !' : dupRef.error.code
   )
+  // Procédure neuve et jetable : valider l'évaluation avant l'ouverture des plis doit être refusé.
+  const scratch = await evaluate(
+    `window.api.createProcedure({reference:'AOR-TEMP/2026',object:'Procédure jetable',method:'AOR',ppmLineId:null,estimatedAmount:null})`
+  )
   const outOfOrder = await evaluate(
-    `window.api.validateStep({procedureId:${JSON.stringify(procId)},step:'EVALUATION'})`
+    `window.api.validateStep({procedureId:${JSON.stringify(scratch.value.id)},step:'EVALUATION'})`
   )
   check(
     'API : valider une étape avant la précédente est refusé',
     !outOfOrder.ok && outOfOrder.error.code === 'PREVIOUS_STEP_NOT_VALIDATED',
     outOfOrder.ok ? 'ACCEPTÉE !' : outOfOrder.error.code
+  )
+  const outOfOrderAward = await evaluate(
+    `window.api.setAward({procedureId:${JSON.stringify(scratch.value.id)},bidId:'inexistante'})`
+  )
+  check(
+    'API : désigner une offre inexistante est refusé',
+    !outOfOrderAward.ok && outOfOrderAward.error.code === 'BID_NOT_FOUND',
+    outOfOrderAward.ok ? 'ACCEPTÉE !' : outOfOrderAward.error.code
+  )
+  await evaluate(`window.api.deleteProcedure({procedureId:${JSON.stringify(scratch.value.id)}})`)
+  const alreadyValidated = await evaluate(
+    `window.api.validateStep({procedureId:${JSON.stringify(procId)},step:'EVALUATION'})`
+  )
+  check(
+    'API : valider une étape déjà validée est refusé',
+    !alreadyValidated.ok && alreadyValidated.error.code === 'STEP_ALREADY_VALIDATED',
+    alreadyValidated.ok ? 'ACCEPTÉE !' : alreadyValidated.error.code
   )
   const badStep = await evaluate(
     `window.api.validateStep({procedureId:${JSON.stringify(procId)},step:'AUTRE'})`
@@ -533,6 +697,37 @@ try {
     lineInUse.ok ? 'SUPPRIMÉE !' : lineInUse.error.code
   )
 
+  const cands = await evaluate('window.api.listCandidates()')
+  check(
+    'API : deux candidats, chacun avec une offre',
+    cands.ok && cands.value.length === 2 && cands.value.every((c) => c.bidCount === 1),
+    JSON.stringify(cands.ok ? cands.value.map((c) => [c.name, c.bidCount]) : cands.error)
+  )
+  const alphaId = cands.value.find((c) => c.name === 'SARL Alpha').id
+  const delUsed = await evaluate(
+    `window.api.deleteCandidate({candidateId:${JSON.stringify(alphaId)}})`
+  )
+  check(
+    'un candidat qui a déposé une offre ne peut pas être supprimé',
+    !delUsed.ok && delUsed.error.code === 'CANDIDATE_IN_USE',
+    delUsed.ok ? 'SUPPRIMÉ !' : delUsed.error.code
+  )
+  const badBid = await evaluate(
+    `window.api.addBid({procedureId:${JSON.stringify(procId)},candidateId:${JSON.stringify(alphaId)},amount:-5})`
+  )
+  check(
+    'API : un montant négatif est rejeté à la frontière',
+    !badBid.ok && badBid.error.code === 'INVALID_REQUEST'
+  )
+  const dupBid = await evaluate(
+    `window.api.addBid({procedureId:${JSON.stringify(procId)},candidateId:${JSON.stringify(alphaId)},amount:100})`
+  )
+  check(
+    'API : les offres sont verrouillées une fois l’attribution validée',
+    !dupBid.ok && dupBid.error.code === 'BIDS_LOCKED',
+    dupBid.ok ? 'ACCEPTÉE !' : dupBid.error.code
+  )
+
   // Isolation : la région 2 ne voit rien du plan de la région 1
   const toRegion2 = await evaluate(
     `window.api.openRegion({regionId:${JSON.stringify(r2.value.region.id)},password:${JSON.stringify(P2)}})`
@@ -542,6 +737,8 @@ try {
   check('région 2 : aucun plan visible', plansOf2.ok && plansOf2.value.length === 0)
   const procsOf2 = await evaluate('window.api.listProcedures()')
   check('région 2 : aucune procédure visible', procsOf2.ok && procsOf2.value.length === 0)
+  const candsOf2 = await evaluate('window.api.listCandidates()')
+  check('région 2 : aucun candidat visible', candsOf2.ok && candsOf2.value.length === 0)
   const foreignProc = await evaluate(
     `window.api.getProcedure({procedureId:${JSON.stringify(procId)}})`
   )
@@ -569,7 +766,7 @@ try {
   )
   check(
     'retour à la région 1 : la procédure et son avancement sont toujours là',
-    procsAgain.ok && procsAgain.value.length === 1 && procsAgain.value[0].validatedCount === 1
+    procsAgain.ok && procsAgain.value.length === 1 && procsAgain.value[0].validatedCount === 4
   )
 
   await evaluate('window.api.closeSession()')
@@ -624,6 +821,8 @@ try {
       bytes.includes(OBJECT) ||
       bytes.includes('SAF') ||
       bytes.includes(REFERENCE) ||
+      bytes.includes('Beta Construction') ||
+      bytes.includes('1234567890') ||
       bytes.includes('CREATE TABLE')
     )
   })

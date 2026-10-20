@@ -8,6 +8,7 @@ import { Alert } from '../../ui/Alert'
 import { Icon } from '../../ui/Icon'
 import { PageHeader } from '../../ui/PageHeader'
 import { ProgressBadge } from '../../ui/ProgressBadge'
+import { BidsPanel } from './BidsPanel'
 
 interface Props {
   readonly procedureId: string
@@ -314,6 +315,8 @@ export function ProcedureDetailScreen({ procedureId, onEdit, onBack }: Props): R
           </table>
         </div>
       </section>
+
+      <BidsPanel detail={detail} onChange={setDetail} />
 
       <div className="danger-zone">
         {confirmDelete ? (

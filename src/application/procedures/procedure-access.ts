@@ -3,6 +3,7 @@ import type { Procedure } from '@domain/procedure'
 import type { ProcedureRepository } from '@domain/repositories'
 import { DomainError } from '@domain/shared/errors'
 import type { RegionRepositories } from '../ports'
+import { toDetailView, type ProcedureDetailView } from './views'
 
 export function requireProcedure(procedures: ProcedureRepository, procedureId: string): Procedure {
   const procedure = procedures.findById(procedureId)
@@ -43,4 +44,12 @@ export function assertPpmLineExists(ppms: readonly Ppm[], lineId: string | null)
 
 export function ppmsOf(repositories: RegionRepositories): readonly Ppm[] {
   return repositories.ppms.list()
+}
+
+/** Vue détaillée d'une procédure : lignes du plan et noms des candidats lus dans la région ouverte. */
+export function detailOf(
+  repositories: RegionRepositories,
+  procedure: Procedure
+): ProcedureDetailView {
+  return toDetailView(procedure, repositories.ppms.list(), repositories.candidates.list())
 }

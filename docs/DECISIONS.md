@@ -223,3 +223,16 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Avancement dérivé, jamais stocké : non démarrée (0 étape validée), en cours, terminée (5 sur 5).
 - Pas encore pris en compte (Phase 6) : l'attribution exigera une offre retenue ; les candidats et offres se gèrent dans la Phase 6.
 - Aucune migration : le schéma de la migration 001 couvrait déjà les procédures et leurs étapes.
+
+## ADR-028 — Candidats et offres (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-10-19).
+- Candidats : fiche partagée dans la région (nom obligatoire ; NIF, STAT, adresse, téléphone, courriel facultatifs). Deux candidats ne peuvent pas porter le même NIF (espaces et casse ignorés) ; plusieurs candidats sans NIF sont permis, et deux noms identiques avec des NIF différents aussi. Le NIF est unique par région (une autre région peut avoir le même).
+- Suppression d'un candidat : refusée s'il a déposé une offre (même dans une procédure terminée) ou s'il est titulaire d'un contrat ; il faut d'abord retirer ses offres.
+- Offres : un candidat ne dépose qu'une offre par procédure (règle de la Phase 2, conservée) ; le candidat doit exister. Montant en Ariary entier. Pas de classement des offres ni de note d'évaluation (non modélisé).
+- Offre retenue : une seule par procédure, modifiable librement tant que l'attribution n'est pas validée ; on peut retirer la désignation.
+- **L'étape « Attribution » ne peut être validée que si une offre est retenue** (règle annoncée à la Phase 5, désormais effective).
+- Verrou : une fois l'attribution validée, les offres (ajout, montant, retrait, désignation) ne se modifient plus ; rouvrir l'attribution les déverrouille.
+- Une offre peut être saisie à n'importe quel stade de la procédure (pas seulement après l'ouverture des plis) : choix volontairement souple, à resserrer si la PRMP le demande.
+- La liste des procédures indique l'attributaire (nom du candidat dont l'offre est retenue).
+- Aucune migration : les tables `candidate` et `bid` de la migration 001 couvraient ce besoin ; l'unicité d'une seule offre retenue par procédure était déjà garantie par un index de la base.

@@ -2,6 +2,15 @@
 
 ## [Non publié]
 
+### Phase 6 — Candidats et offres (2026-10-19)
+
+- Domaine : offres modifiables (montant, retrait), désignation d'une seule offre retenue, verrou des offres après l'attribution, attribution exigeant une offre retenue ; NIF normalisé.
+- Application : 4 cas d'utilisation de candidats et 4 d'offres ; NIF unique par région ; un candidat ayant une offre ou un contrat ne peut pas être supprimé ; les vues de procédure donnent les noms des candidats, les offres et l'attributaire.
+- IPC : 8 canaux `candidate:*` et `procedure:*-bid` / `set-award`.
+- Interface : entrée « Candidats » du menu (liste, création, modification, suppression en deux clics) ; panneau « Offres reçues » dans la page d'une procédure ; colonne « Attributaire » dans la liste des procédures.
+- Tests : 359 tests ; e2e 106 vérifications ; 8 mutations détectées. Captures : docs/captures/09 et 10.
+- Aucune migration de base.
+
 ### Phase 5 — Procédures de passation (2026-10-15)
 
 - Domaine : avancement dérivé, dates d'étape, validation, réouverture, modification de l'en-tête, avec les règles de succession (ADR-027).

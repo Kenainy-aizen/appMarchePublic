@@ -2,8 +2,8 @@ import { createProcedure, parseProcedureMethod } from '@domain/procedure'
 import { ariary } from '@domain/shared/ariary'
 import type { Clock, IdGenerator } from '@domain/shared/ports'
 import type { RegionSession } from '../region-session'
-import { assertPpmLineExists, assertReferenceAvailable, ppmsOf } from './procedure-access'
-import { toDetailView, type ProcedureDetailView } from './views'
+import { assertPpmLineExists, assertReferenceAvailable, detailOf, ppmsOf } from './procedure-access'
+import type { ProcedureDetailView } from './views'
 
 export interface ProcedureFields {
   readonly reference: string
@@ -36,6 +36,6 @@ export class CreateProcedureUseCase {
     assertReferenceAvailable(repositories.procedures, procedure.reference, null)
     assertPpmLineExists(ppms, procedure.ppmLineId)
     repositories.procedures.save(procedure)
-    return toDetailView(procedure, ppms)
+    return detailOf(repositories, procedure)
   }
 }

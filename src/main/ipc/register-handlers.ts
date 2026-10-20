@@ -15,11 +15,12 @@ import {
   openRegionInputSchema,
   saveOrganizationInputSchema
 } from '@shared/ipc-schemas'
+import { type CandidateUseCases, registerCandidateHandlers } from './register-candidate-handlers'
 import { type PpmUseCases, registerPpmHandlers } from './register-ppm-handlers'
 import { type ProcedureUseCases, registerProcedureHandlers } from './register-procedure-handlers'
 import { parseInput, runSafely } from './safe-handler'
 
-export interface UseCases extends PpmUseCases, ProcedureUseCases {
+export interface UseCases extends PpmUseCases, ProcedureUseCases, CandidateUseCases {
   readonly getAppInfo: GetAppInfoUseCase
   readonly listRegions: ListRegionsUseCase
   readonly createRegion: CreateRegionUseCase
@@ -62,4 +63,5 @@ export function registerIpcHandlers(useCases: UseCases): void {
 
   registerPpmHandlers(useCases)
   registerProcedureHandlers(useCases)
+  registerCandidateHandlers(useCases)
 }

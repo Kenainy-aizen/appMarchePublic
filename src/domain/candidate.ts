@@ -1,5 +1,10 @@
 import { optionalText, requiredText } from './shared/text'
 
+/** NIF comparé sans espaces ni différence de casse (« 123 456 » = « 123456 »). */
+export function normalizeNif(nif: string): string {
+  return nif.replace(/\s+/g, '').toUpperCase()
+}
+
 /** Candidat / soumissionnaire / titulaire, partagé entre procédures et contrats. */
 export interface Candidate {
   readonly id: string

@@ -1,8 +1,8 @@
 import { parseStepKind, reopenStep, setStepDates, validateStep } from '@domain/procedure'
 import type { Clock } from '@domain/shared/ports'
 import type { RegionSession } from '../region-session'
-import { ppmsOf, requireProcedure } from './procedure-access'
-import { toDetailView, type ProcedureDetailView } from './views'
+import { detailOf, requireProcedure } from './procedure-access'
+import type { ProcedureDetailView } from './views'
 
 /** Charge la procédure, applique une règle du domaine, enregistre et renvoie la vue mise à jour. */
 function applyToProcedure(
@@ -13,7 +13,7 @@ function applyToProcedure(
   const { repositories } = session.requireWorkspace()
   const updated = change(requireProcedure(repositories.procedures, procedureId))
   repositories.procedures.save(updated)
-  return toDetailView(updated, ppmsOf(repositories))
+  return detailOf(repositories, updated)
 }
 
 export class SaveStepDatesUseCase {

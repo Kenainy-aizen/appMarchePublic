@@ -1,5 +1,6 @@
+import type { Candidate } from '@domain/candidate'
 import type { Ppm } from '@domain/ppm'
-import { type Procedure, procedureProgress } from '@domain/procedure'
+import { bidsLocked, type Procedure, procedureProgress } from '@domain/procedure'
 
 export interface ProcedureSummaryView {
   readonly id: string
@@ -12,6 +13,7 @@ export interface ProcedureSummaryView {
   readonly totalSteps: number
   readonly status: string
   readonly nextStep: string | null
+  readonly awardedCandidate: string | null
 }
 
 export interface PpmLineRefView {
@@ -28,6 +30,14 @@ export interface PpmLineChoiceView extends PpmLineRefView {
   readonly method: string | null
 }
 
+export interface BidView {
+  readonly id: string
+  readonly candidateId: string
+  readonly candidateName: string
+  readonly amount: number
+  readonly awarded: boolean
+}
+
 export interface ProcedureDetailView extends ProcedureSummaryView {
   readonly ppmLine: PpmLineRefView | null
   readonly steps: readonly {
@@ -36,10 +46,20 @@ export interface ProcedureDetailView extends ProcedureSummaryView {
     readonly actualDate: string | null
     readonly validatedOn: string | null
   }[]
+  readonly bids: readonly BidView[]
+  readonly bidsLocked: boolean
 }
 
-export function toSummaryView(procedure: Procedure): ProcedureSummaryView {
+function candidateName(candidates: readonly Candidate[], candidateId: string): string {
+  return candidates.find((candidate) => candidate.id === candidateId)?.name ?? '—'
+}
+
+export function toSummaryView(
+  procedure: Procedure,
+  candidates: readonly Candidate[]
+): ProcedureSummaryView {
   const progress = procedureProgress(procedure)
+  const awarded = procedure.bids.find((bid) => bid.awarded)
   return {
     id: procedure.id,
     reference: procedure.reference,
@@ -50,7 +70,8 @@ export function toSummaryView(procedure: Procedure): ProcedureSummaryView {
     validatedCount: progress.validatedCount,
     totalSteps: progress.total,
     status: progress.status,
-    nextStep: progress.nextStep
+    nextStep: progress.nextStep,
+    awardedCandidate: awarded === undefined ? null : candidateName(candidates, awarded.candidateId)
   }
 }
 
@@ -70,13 +91,17 @@ export function listLineChoices(ppms: readonly Ppm[]): PpmLineChoiceView[] {
   )
 }
 
-export function toDetailView(procedure: Procedure, ppms: readonly Ppm[]): ProcedureDetailView {
+export function toDetailView(
+  procedure: Procedure,
+  ppms: readonly Ppm[],
+  candidates: readonly Candidate[]
+): ProcedureDetailView {
   const choice =
     procedure.ppmLineId === null
       ? null
       : (listLineChoices(ppms).find((line) => line.lineId === procedure.ppmLineId) ?? null)
   return {
-    ...toSummaryView(procedure),
+    ...toSummaryView(procedure, candidates),
     ppmLine:
       choice === null
         ? null
@@ -93,6 +118,14 @@ export function toDetailView(procedure: Procedure, ppms: readonly Ppm[]): Proced
       plannedDate: step.plannedDate,
       actualDate: step.actualDate,
       validatedOn: step.validatedOn
-    }))
+    })),
+    bids: procedure.bids.map((bid) => ({
+      id: bid.id,
+      candidateId: bid.candidateId,
+      candidateName: candidateName(candidates, bid.candidateId),
+      amount: bid.amount,
+      awarded: bid.awarded
+    })),
+    bidsLocked: bidsLocked(procedure)
   }
 }

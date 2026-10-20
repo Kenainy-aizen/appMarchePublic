@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addBid,
+  createBid,
   createProcedure,
   parseStepKind,
   procedureProgress,
   reopenStep,
+  setAwardedBid,
   setStepDates,
   STEP_KINDS,
   updateProcedureDetails,
@@ -37,7 +40,18 @@ const codeOf = (action: () => unknown): string => {
 const completeUntil = (kinds: readonly StepKind[], base = fresh()): Procedure =>
   kinds.reduce((procedure, kind, index) => {
     const day = String(10 + index).padStart(2, '0')
-    const withDate = setStepDates(procedure, kind, {
+    // L'attribution exige une offre retenue (ADR-028) : on en ajoute une quand il le faut.
+    const ready =
+      kind === 'ATTRIBUTION' && !procedure.bids.some((bid) => bid.awarded)
+        ? setAwardedBid(
+            addBid(
+              procedure,
+              createBid({ id: 'b-auto', candidateId: 'c-auto', amount: ariary(1_000) })
+            ),
+            'b-auto'
+          )
+        : procedure
+    const withDate = setStepDates(ready, kind, {
       plannedDate: null,
       actualDate: `2026-03-${day}`
     })

@@ -105,6 +105,7 @@ export function createBid(input: {
 
 /** Ajoute une offre ; un candidat ne peut déposer qu'une offre par procédure. */
 export function addBid(procedure: Procedure, bid: Bid): Procedure {
+  assertBidsOpen(procedure)
   if (procedure.bids.some((existing) => existing.candidateId === bid.candidateId)) {
     throw new DomainError(
       'DUPLICATE_BID',
@@ -262,6 +263,12 @@ export function validateStep(procedure: Procedure, kind: StepKind, validatedOn: 
       `Renseignez la date réelle de l’étape « ${STEP_LABELS[kind]} » avant de la valider.`
     )
   }
+  if (kind === 'ATTRIBUTION' && !procedure.bids.some((bid) => bid.awarded)) {
+    throw new DomainError(
+      'AWARDED_BID_REQUIRED',
+      'Désignez l’offre retenue avant de valider l’attribution.'
+    )
+  }
   return replaceStep(procedure, { ...step, validatedOn: parseIsoDate(validatedOn) })
 }
 
@@ -279,4 +286,54 @@ export function reopenStep(procedure: Procedure, kind: StepKind): Procedure {
     )
   }
   return replaceStep(procedure, { ...step, validatedOn: null })
+}
+
+/** Les offres ne se modifient plus une fois l'attribution validée (rouvrir l'attribution les déverrouille). */
+export function bidsLocked(procedure: Procedure): boolean {
+  return findStep(procedure, 'ATTRIBUTION').validatedOn !== null
+}
+
+function assertBidsOpen(procedure: Procedure): void {
+  if (bidsLocked(procedure)) {
+    throw new DomainError(
+      'BIDS_LOCKED',
+      'L’attribution est validée : les offres ne peuvent plus être modifiées. Rouvrez d’abord l’attribution.'
+    )
+  }
+}
+
+export function findBid(procedure: Procedure, bidId: string): Bid {
+  const bid = procedure.bids.find((candidate) => candidate.id === bidId)
+  if (bid === undefined) {
+    throw new DomainError('BID_NOT_FOUND', 'Cette offre n’existe pas dans la procédure.')
+  }
+  return bid
+}
+
+function replaceBid(procedure: Procedure, bid: Bid): Procedure {
+  return {
+    ...procedure,
+    bids: procedure.bids.map((existing) => (existing.id === bid.id ? bid : existing))
+  }
+}
+
+export function updateBidAmount(procedure: Procedure, bidId: string, amount: Ariary): Procedure {
+  assertBidsOpen(procedure)
+  return replaceBid(procedure, { ...findBid(procedure, bidId), amount })
+}
+
+export function removeBid(procedure: Procedure, bidId: string): Procedure {
+  assertBidsOpen(procedure)
+  findBid(procedure, bidId)
+  return { ...procedure, bids: procedure.bids.filter((bid) => bid.id !== bidId) }
+}
+
+/** Désigne l'offre retenue (une seule par procédure) ; `null` retire la désignation. */
+export function setAwardedBid(procedure: Procedure, bidId: string | null): Procedure {
+  assertBidsOpen(procedure)
+  if (bidId !== null) findBid(procedure, bidId)
+  return {
+    ...procedure,
+    bids: procedure.bids.map((bid) => ({ ...bid, awarded: bid.id === bidId }))
+  }
 }

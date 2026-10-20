@@ -251,3 +251,44 @@ mot de passe -> scrypt -> clé qui déchiffre l'enveloppe -> clé de données (D
 - Contrôle par mutation : 8 régressions volontaires (validation hors ordre, sans date réelle, réouverture interdite, dates verrouillées, mode verrouillé, référence en double, bouton « Valider » trop permissif, suppression d'une procédure liée à un contrat) sont toutes détectées.
 - Une procédure et son avancement survivent à un redémarrage ; une procédure d'une région est introuvable depuis une autre ; la ligne du plan rattachée ne peut plus être supprimée.
 - Test de bout en bout : 78 vérifications, dont le parcours entier de la procédure par de vrais clics (création préremplie par la ligne du plan, refus sans date, dates, validation, réouverture).
+
+## 13. Phase 6 — Candidats et offres
+
+### Fichiers
+
+    src/domain/procedure.ts                      + bidsLocked, findBid, updateBidAmount, removeBid, setAwardedBid ;
+                                                   addBid verrouillé ; validateStep exige une offre retenue pour l'attribution
+    src/domain/candidate.ts                      + normalizeNif
+    src/application/candidates/                  candidate-use-cases (liste, création, modification, suppression)
+    src/application/procedures/bid-use-cases.ts  ajouter, modifier, retirer une offre ; désigner l'offre retenue
+    src/application/procedures/views.ts          vues avec noms des candidats, offres, verrou, attributaire
+    src/main/ipc/register-candidate-handlers.ts  8 canaux
+    src/renderer/src/screens/candidates/         CandidateModule, CandidateListScreen, CandidateForm
+    src/renderer/src/screens/procedures/BidsPanel.tsx   offres d'une procédure
+    tests/application/candidates-and-bids.test.ts, tests/domain/bids.test.ts,
+    tests/integration/candidate-bid-real-database.test.ts, tests/renderer/candidate-and-bids.test.tsx
+
+### Canaux IPC (tous exigent une région ouverte, sinon `NO_ACTIVE_REGION`)
+
+| Canal                | Entrée                                       | Résultat                  |
+| -------------------- | -------------------------------------------- | ------------------------- |
+| candidate:list       | —                                            | candidats (+ nb d'offres) |
+| candidate:create     | nom, NIF, STAT, adresse, téléphone, courriel | candidat                  |
+| candidate:update     | idem + `candidateId`                         | candidat                  |
+| candidate:delete     | `candidateId`                                | null                      |
+| procedure:add-bid    | `procedureId`, `candidateId`, montant        | détail de la procédure    |
+| procedure:update-bid | `procedureId`, `bidId`, montant              | détail                    |
+| procedure:remove-bid | `procedureId`, `bidId`                       | détail                    |
+| procedure:set-award  | `procedureId`, `bidId` ou null               | détail                    |
+
+### Où vit chaque règle
+
+- Domaine : une seule offre retenue, verrou après l'attribution, attribution exigeant une offre retenue, offre par candidat unique.
+- Application : candidat introuvable, NIF unique, suppression d'un candidat utilisé, noms des candidats dans les vues.
+- Interface : masque les candidats ayant déjà une offre, désactive les actions quand les offres sont verrouillées (confort ; le domaine reste l'autorité).
+
+### Garanties vérifiées par des tests
+
+- Contrôle par mutation : 8 régressions volontaires (attribution sans offre retenue, verrou ignoré, plusieurs offres retenues, NIF en double, suppression d'un candidat ayant une offre, offre d'un candidat inconnu, verrou ignoré par l'interface, candidat déjà en offre proposé) sont toutes détectées.
+- Offres et offre retenue survivent à un redémarrage ; changer l'offre retenue fonctionne en base dans les deux sens ; candidats et offres d'une région sont invisibles depuis une autre.
+- Test de bout en bout : 106 vérifications, dont le parcours entier par de vrais clics (créer deux candidats, refus d'un NIF en double, saisir deux offres, refus de l'attribution sans offre retenue, retenir une offre, valider, verrou, réouverture) et l'absence de tout nom ou NIF lisible dans les fichiers chiffrés.
