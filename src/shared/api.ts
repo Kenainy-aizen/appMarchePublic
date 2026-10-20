@@ -1,6 +1,9 @@
 import type { z } from 'zod'
 import type {
+  addBidInputSchema,
   appInfoSchema,
+  candidateIdInputSchema,
+  createCandidateInputSchema,
   createPpmInputSchema,
   createProcedureInputSchema,
   createRegionInputSchema,
@@ -8,10 +11,14 @@ import type {
   saveOrganizationInputSchema,
   ppmIdInputSchema,
   procedureIdInputSchema,
+  removeBidInputSchema,
   removePpmLineInputSchema,
   saveStepDatesInputSchema,
+  setAwardInputSchema,
   savePpmLineInputSchema,
   stepInputSchema,
+  updateBidInputSchema,
+  updateCandidateInputSchema,
   updateProcedureInputSchema
 } from './ipc-schemas'
 
@@ -29,6 +36,13 @@ export type CreateProcedureInputDto = z.infer<typeof createProcedureInputSchema>
 export type UpdateProcedureInputDto = z.infer<typeof updateProcedureInputSchema>
 export type SaveStepDatesInputDto = z.infer<typeof saveStepDatesInputSchema>
 export type StepInputDto = z.infer<typeof stepInputSchema>
+export type CandidateIdInputDto = z.infer<typeof candidateIdInputSchema>
+export type CreateCandidateInputDto = z.infer<typeof createCandidateInputSchema>
+export type UpdateCandidateInputDto = z.infer<typeof updateCandidateInputSchema>
+export type AddBidInputDto = z.infer<typeof addBidInputSchema>
+export type UpdateBidInputDto = z.infer<typeof updateBidInputSchema>
+export type RemoveBidInputDto = z.infer<typeof removeBidInputSchema>
+export type SetAwardInputDto = z.infer<typeof setAwardInputSchema>
 
 /** Une région telle que l'interface la connaît : jamais de clé ni de secret. */
 export interface RegionSummaryDto {
@@ -109,6 +123,8 @@ export interface ProcedureSummaryDto {
   readonly status: string
   /** Prochaine étape à valider, ou null si la procédure est terminée. */
   readonly nextStep: string | null
+  /** Nom du candidat dont l'offre est retenue, ou null. */
+  readonly awardedCandidate: string | null
 }
 
 export interface ProcedureStepDto {
@@ -128,9 +144,32 @@ export interface PpmLineRefDto {
   readonly total: number
 }
 
+export interface BidDto {
+  readonly id: string
+  readonly candidateId: string
+  readonly candidateName: string
+  readonly amount: number
+  readonly awarded: boolean
+}
+
 export interface ProcedureDetailDto extends ProcedureSummaryDto {
   readonly ppmLine: PpmLineRefDto | null
   readonly steps: readonly ProcedureStepDto[]
+  readonly bids: readonly BidDto[]
+  /** Vrai une fois l'attribution validée : les offres ne se modifient plus. */
+  readonly bidsLocked: boolean
+}
+
+/** Candidat / soumissionnaire. `bidCount` = nombre d'offres déposées (toutes procédures). */
+export interface CandidateDto {
+  readonly id: string
+  readonly name: string
+  readonly nif: string | null
+  readonly stat: string | null
+  readonly address: string | null
+  readonly phone: string | null
+  readonly email: string | null
+  readonly bidCount: number
 }
 
 /** Une ligne de plan proposée dans la liste de rattachement d'une procédure. */
@@ -175,4 +214,12 @@ export interface PrmpApi {
   validateStep(input: StepInputDto): Promise<ApiResult<ProcedureDetailDto>>
   reopenStep(input: StepInputDto): Promise<ApiResult<ProcedureDetailDto>>
   deleteProcedure(input: ProcedureIdInputDto): Promise<ApiResult<null>>
+  addBid(input: AddBidInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  updateBid(input: UpdateBidInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  removeBid(input: RemoveBidInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  setAward(input: SetAwardInputDto): Promise<ApiResult<ProcedureDetailDto>>
+  listCandidates(): Promise<ApiResult<readonly CandidateDto[]>>
+  createCandidate(input: CreateCandidateInputDto): Promise<ApiResult<CandidateDto>>
+  updateCandidate(input: UpdateCandidateInputDto): Promise<ApiResult<CandidateDto>>
+  deleteCandidate(input: CandidateIdInputDto): Promise<ApiResult<null>>
 }

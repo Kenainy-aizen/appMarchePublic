@@ -43,7 +43,15 @@ export function installApiMock(): ApiMock {
     saveStepDates: vi.fn<PrmpApi['saveStepDates']>(),
     validateStep: vi.fn<PrmpApi['validateStep']>(),
     reopenStep: vi.fn<PrmpApi['reopenStep']>(),
-    deleteProcedure: vi.fn<PrmpApi['deleteProcedure']>().mockResolvedValue(ok(null))
+    deleteProcedure: vi.fn<PrmpApi['deleteProcedure']>().mockResolvedValue(ok(null)),
+    addBid: vi.fn<PrmpApi['addBid']>(),
+    updateBid: vi.fn<PrmpApi['updateBid']>(),
+    removeBid: vi.fn<PrmpApi['removeBid']>(),
+    setAward: vi.fn<PrmpApi['setAward']>(),
+    listCandidates: vi.fn<PrmpApi['listCandidates']>().mockResolvedValue(ok([])),
+    createCandidate: vi.fn<PrmpApi['createCandidate']>(),
+    updateCandidate: vi.fn<PrmpApi['updateCandidate']>(),
+    deleteCandidate: vi.fn<PrmpApi['deleteCandidate']>().mockResolvedValue(ok(null))
   }
   Object.defineProperty(window, 'api', { value: api, configurable: true, writable: true })
   return api

@@ -4,6 +4,7 @@ import { messageOf, unwrap } from '../api-errors'
 import { AppShell, type SectionId } from '../layouts/AppShell'
 import { Alert } from '../ui/Alert'
 import { HomeSection } from './HomeSection'
+import { CandidateModule } from './candidates/CandidateModule'
 import { PpmModule } from './ppm/PpmModule'
 import { ProcedureModule } from './procedures/ProcedureModule'
 import { SettingsScreen } from './SettingsScreen'
@@ -55,6 +56,7 @@ export function WorkspaceScreen({
       )}
       {section === 'ppm' && <PpmModule />}
       {section === 'procedures' && <ProcedureModule />}
+      {section === 'candidates' && <CandidateModule />}
       {section === 'settings' && (
         <SettingsScreen
           organizationName={organizationName}

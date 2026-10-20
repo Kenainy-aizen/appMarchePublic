@@ -36,7 +36,10 @@ const detail = (overrides: Partial<ProcedureDetailDto> = {}): ProcedureDetailDto
   totalSteps: 5,
   status: 'NOT_STARTED',
   nextStep: 'PUBLICATION',
+  awardedCandidate: null,
   ppmLine: null,
+  bids: [],
+  bidsLocked: false,
   steps: KINDS.map((kind) => step(kind)),
   ...overrides
 })
@@ -65,6 +68,7 @@ const summary = (overrides: Partial<ProcedureSummaryDto> = {}): ProcedureSummary
   totalSteps: 5,
   status: 'IN_PROGRESS',
   nextStep: 'EVALUATION',
+  awardedCandidate: 'SARL Alpha',
   ...overrides
 })
 
@@ -104,6 +108,7 @@ describe('ProcedureListScreen', () => {
     const rows = await screen.findAllByRole('row')
     expect(text(rows[1] as HTMLElement)).toContain('2 sur 5 — En cours')
     expect(text(rows[1] as HTMLElement)).toContain('1 500 000 Ar')
+    expect(text(rows[1] as HTMLElement)).toContain('SARL Alpha')
     expect(text(rows[1] as HTMLElement)).toContain('Appel d’offres ouvert (DAO)')
     expect(text(rows[2] as HTMLElement)).toContain('0 sur 5 — Non démarrée')
     expect(text(rows[2] as HTMLElement)).toContain('—')

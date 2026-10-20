@@ -6,6 +6,18 @@ import { RegionSession } from '@application/region-session'
 import { CloseRegionUseCase, GetSessionUseCase } from '@application/regions/close-and-get-session'
 import { CreateRegionUseCase } from '@application/regions/create-region'
 import { ListRegionsUseCase } from '@application/regions/list-regions'
+import {
+  CreateCandidateUseCase,
+  DeleteCandidateUseCase,
+  ListCandidatesUseCase,
+  UpdateCandidateUseCase
+} from '@application/candidates/candidate-use-cases'
+import {
+  AddBidUseCase,
+  RemoveBidUseCase,
+  SetAwardUseCase,
+  UpdateBidUseCase
+} from '@application/procedures/bid-use-cases'
 import { CreateProcedureUseCase } from '@application/procedures/create-procedure'
 import { DeleteProcedureUseCase } from '@application/procedures/delete-procedure'
 import { GetProcedureUseCase } from '@application/procedures/get-procedure'
@@ -82,7 +94,15 @@ function bootstrap(): RegionSession {
     saveStepDates: new SaveStepDatesUseCase(session),
     validateStep: new ValidateStepUseCase(session, clock),
     reopenStep: new ReopenStepUseCase(session),
-    deleteProcedure: new DeleteProcedureUseCase(session)
+    deleteProcedure: new DeleteProcedureUseCase(session),
+    listCandidates: new ListCandidatesUseCase(session),
+    createCandidate: new CreateCandidateUseCase(session, ids),
+    updateCandidate: new UpdateCandidateUseCase(session),
+    deleteCandidate: new DeleteCandidateUseCase(session),
+    addBid: new AddBidUseCase(session, ids),
+    updateBid: new UpdateBidUseCase(session),
+    removeBid: new RemoveBidUseCase(session),
+    setAward: new SetAwardUseCase(session)
   })
   createMainWindow()
   return session

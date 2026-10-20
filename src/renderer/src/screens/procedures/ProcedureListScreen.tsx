@@ -75,6 +75,7 @@ export function ProcedureListScreen({ onOpen, onCreate }: Props): React.JSX.Elem
                   <th scope="col">Objet</th>
                   <th scope="col">Mode</th>
                   <th scope="col">Avancement</th>
+                  <th scope="col">Attributaire</th>
                   <th scope="col" className="number">
                     Montant estimé
                   </th>
@@ -98,6 +99,7 @@ export function ProcedureListScreen({ onOpen, onCreate }: Props): React.JSX.Elem
                         totalSteps={procedure.totalSteps}
                       />
                     </td>
+                    <td>{procedure.awardedCandidate ?? '—'}</td>
                     <td className="number">
                       {procedure.estimatedAmount === null
                         ? '—'

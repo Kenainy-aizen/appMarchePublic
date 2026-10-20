@@ -11,7 +11,9 @@ export class ListProceduresUseCase {
   constructor(private readonly session: RegionSession) {}
 
   execute(): readonly ProcedureSummaryView[] {
-    return this.session.requireWorkspace().repositories.procedures.list().map(toSummaryView)
+    const { procedures, candidates } = this.session.requireWorkspace().repositories
+    const known = candidates.list()
+    return procedures.list().map((procedure) => toSummaryView(procedure, known))
   }
 }
 

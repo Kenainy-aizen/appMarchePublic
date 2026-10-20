@@ -5,10 +5,11 @@ import type { ProcedureFields } from './create-procedure'
 import {
   assertPpmLineExists,
   assertReferenceAvailable,
+  detailOf,
   ppmsOf,
   requireProcedure
 } from './procedure-access'
-import { toDetailView, type ProcedureDetailView } from './views'
+import type { ProcedureDetailView } from './views'
 
 /** Modifie l'en-tête d'une procédure (le mode n'est plus modifiable dès qu'une étape est validée). */
 export class UpdateProcedureUseCase {
@@ -28,6 +29,6 @@ export class UpdateProcedureUseCase {
     assertReferenceAvailable(repositories.procedures, updated.reference, updated.id)
     assertPpmLineExists(ppms, updated.ppmLineId)
     repositories.procedures.save(updated)
-    return toDetailView(updated, ppms)
+    return detailOf(repositories, updated)
   }
 }

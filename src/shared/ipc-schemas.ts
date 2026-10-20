@@ -84,3 +84,31 @@ export const saveStepDatesInputSchema = z.object({
 
 /** Valider ou rouvrir une étape. */
 export const stepInputSchema = z.object({ procedureId: idField, step: z.enum(STEP_CODES) })
+
+// --- Candidats et offres ---
+const candidateFields = {
+  name: z.string().max(200),
+  nif: z.string().max(50).nullable(),
+  stat: z.string().max(50).nullable(),
+  address: z.string().max(300).nullable(),
+  phone: z.string().max(50).nullable(),
+  email: z.string().max(120).nullable()
+}
+
+export const createCandidateInputSchema = z.object(candidateFields)
+export const updateCandidateInputSchema = z.object({ candidateId: idField, ...candidateFields })
+export const candidateIdInputSchema = z.object({ candidateId: idField })
+
+export const addBidInputSchema = z.object({
+  procedureId: idField,
+  candidateId: idField,
+  amount: amountField
+})
+export const updateBidInputSchema = z.object({
+  procedureId: idField,
+  bidId: idField,
+  amount: amountField
+})
+export const removeBidInputSchema = z.object({ procedureId: idField, bidId: idField })
+/** `bidId` = null retire la désignation de l'offre retenue. */
+export const setAwardInputSchema = z.object({ procedureId: idField, bidId: idField.nullable() })

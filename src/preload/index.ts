@@ -56,7 +56,29 @@ const api: PrmpApi = {
   reopenStep: (input) =>
     ipcRenderer.invoke(IpcChannels.procedureReopenStep, input) as ReturnType<PrmpApi['reopenStep']>,
   deleteProcedure: (input) =>
-    ipcRenderer.invoke(IpcChannels.procedureDelete, input) as ReturnType<PrmpApi['deleteProcedure']>
+    ipcRenderer.invoke(IpcChannels.procedureDelete, input) as ReturnType<
+      PrmpApi['deleteProcedure']
+    >,
+  addBid: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureAddBid, input) as ReturnType<PrmpApi['addBid']>,
+  updateBid: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureUpdateBid, input) as ReturnType<PrmpApi['updateBid']>,
+  removeBid: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureRemoveBid, input) as ReturnType<PrmpApi['removeBid']>,
+  setAward: (input) =>
+    ipcRenderer.invoke(IpcChannels.procedureSetAward, input) as ReturnType<PrmpApi['setAward']>,
+  listCandidates: () =>
+    ipcRenderer.invoke(IpcChannels.candidateList) as ReturnType<PrmpApi['listCandidates']>,
+  createCandidate: (input) =>
+    ipcRenderer.invoke(IpcChannels.candidateCreate, input) as ReturnType<
+      PrmpApi['createCandidate']
+    >,
+  updateCandidate: (input) =>
+    ipcRenderer.invoke(IpcChannels.candidateUpdate, input) as ReturnType<
+      PrmpApi['updateCandidate']
+    >,
+  deleteCandidate: (input) =>
+    ipcRenderer.invoke(IpcChannels.candidateDelete, input) as ReturnType<PrmpApi['deleteCandidate']>
 }
 
 contextBridge.exposeInMainWorld('api', api)

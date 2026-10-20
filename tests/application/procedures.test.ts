@@ -15,6 +15,8 @@ import {
 } from '@application/procedures/step-use-cases'
 import { UpdateProcedureUseCase } from '@application/procedures/update-procedure'
 import { RegionSession } from '@application/region-session'
+import { AddBidUseCase, SetAwardUseCase } from '@application/procedures/bid-use-cases'
+import { createCandidate } from '@domain/candidate'
 import { createContract } from '@domain/contract'
 import { ariary } from '@domain/shared/ariary'
 import { DomainError } from '@domain/shared/errors'
@@ -219,6 +221,19 @@ describe('étapes', () => {
     const steps = ['PUBLICATION', 'OUVERTURE_PLIS', 'EVALUATION', 'ATTRIBUTION', 'APPROBATION']
 
     steps.forEach((step, index) => {
+      if (step === 'ATTRIBUTION') {
+        // L'attribution exige une offre retenue (ADR-028).
+        region.repositories.candidates.save(createCandidate({ id: 'c1', name: 'SARL Alpha' }))
+        const withBid = new AddBidUseCase(region.session, new SequentialIds()).execute({
+          procedureId: id,
+          candidateId: 'c1',
+          amount: 1_200_000
+        })
+        new SetAwardUseCase(region.session).execute({
+          procedureId: id,
+          bidId: withBid.bids[0]?.id ?? ''
+        })
+      }
       saveDates.execute({
         procedureId: id,
         step,
