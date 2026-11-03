@@ -1,9 +1,12 @@
 import type { z } from 'zod'
 import type {
   addBidInputSchema,
+  addContractEventInputSchema,
   appInfoSchema,
   candidateIdInputSchema,
+  contractIdInputSchema,
   createCandidateInputSchema,
+  createContractInputSchema,
   createPpmInputSchema,
   createProcedureInputSchema,
   createRegionInputSchema,
@@ -19,6 +22,7 @@ import type {
   stepInputSchema,
   updateBidInputSchema,
   updateCandidateInputSchema,
+  updateContractInputSchema,
   updateProcedureInputSchema
 } from './ipc-schemas'
 
@@ -43,6 +47,10 @@ export type AddBidInputDto = z.infer<typeof addBidInputSchema>
 export type UpdateBidInputDto = z.infer<typeof updateBidInputSchema>
 export type RemoveBidInputDto = z.infer<typeof removeBidInputSchema>
 export type SetAwardInputDto = z.infer<typeof setAwardInputSchema>
+export type ContractIdInputDto = z.infer<typeof contractIdInputSchema>
+export type CreateContractInputDto = z.infer<typeof createContractInputSchema>
+export type UpdateContractInputDto = z.infer<typeof updateContractInputSchema>
+export type AddContractEventInputDto = z.infer<typeof addContractEventInputSchema>
 
 /** Une région telle que l'interface la connaît : jamais de clé ni de secret. */
 export interface RegionSummaryDto {
@@ -158,6 +166,55 @@ export interface ProcedureDetailDto extends ProcedureSummaryDto {
   readonly bids: readonly BidDto[]
   /** Vrai une fois l'attribution validée : les offres ne se modifient plus. */
   readonly bidsLocked: boolean
+  /** Marché issu de cette procédure, s'il existe. */
+  readonly contract: { readonly id: string; readonly reference: string } | null
+  /** Vrai quand l'attribution est validée et qu'aucun marché n'a encore été créé. */
+  readonly canCreateContract: boolean
+}
+
+/** Résumé d'un contrat (liste). Montants en Ariary entiers. */
+export interface ContractSummaryDto {
+  readonly id: string
+  readonly reference: string
+  readonly kind: string
+  readonly object: string
+  readonly holderName: string
+  readonly amount: number
+  /** Montant initial + avenants. */
+  readonly currentAmount: number
+  readonly signedOn: string | null
+  readonly status: string
+}
+
+export interface ContractEventDto {
+  readonly id: string
+  readonly kind: string
+  readonly occurredOn: string
+  readonly amountDelta: number | null
+  readonly note: string | null
+}
+
+export interface ContractDetailDto extends ContractSummaryDto {
+  readonly holderId: string
+  readonly procedure: { readonly id: string; readonly reference: string } | null
+  readonly ppmLine: PpmLineRefDto | null
+  readonly events: readonly ContractEventDto[]
+  /** Événements enregistrables à l'étape actuelle (vide tant que la date de signature manque). */
+  readonly allowedEvents: readonly string[]
+  /** Vrai dès le premier événement : montant initial et date de signature figés. */
+  readonly headerLocked: boolean
+}
+
+/** Procédure attribuée, sans marché : proposée à la création d'un marché. */
+export interface ContractableProcedureDto {
+  readonly id: string
+  readonly reference: string
+  readonly object: string
+  readonly holderId: string
+  readonly holderName: string
+  /** Montant de l'offre retenue. */
+  readonly amount: number
+  readonly ppmLineId: string | null
 }
 
 /** Candidat / soumissionnaire. `bidCount` = nombre d'offres déposées (toutes procédures). */
@@ -222,4 +279,12 @@ export interface PrmpApi {
   createCandidate(input: CreateCandidateInputDto): Promise<ApiResult<CandidateDto>>
   updateCandidate(input: UpdateCandidateInputDto): Promise<ApiResult<CandidateDto>>
   deleteCandidate(input: CandidateIdInputDto): Promise<ApiResult<null>>
+  listContracts(): Promise<ApiResult<readonly ContractSummaryDto[]>>
+  getContract(input: ContractIdInputDto): Promise<ApiResult<ContractDetailDto>>
+  createContract(input: CreateContractInputDto): Promise<ApiResult<ContractDetailDto>>
+  updateContract(input: UpdateContractInputDto): Promise<ApiResult<ContractDetailDto>>
+  deleteContract(input: ContractIdInputDto): Promise<ApiResult<null>>
+  addContractEvent(input: AddContractEventInputDto): Promise<ApiResult<ContractDetailDto>>
+  removeLastContractEvent(input: ContractIdInputDto): Promise<ApiResult<ContractDetailDto>>
+  listContractableProcedures(): Promise<ApiResult<readonly ContractableProcedureDto[]>>
 }

@@ -47,6 +47,8 @@ const detail = (overrides: Partial<ProcedureDetailDto> = {}): ProcedureDetailDto
   steps: [],
   bids: [],
   bidsLocked: false,
+  contract: null,
+  canCreateContract: false,
   ...overrides
 })
 

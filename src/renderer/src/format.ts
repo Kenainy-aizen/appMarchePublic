@@ -27,6 +27,16 @@ export function parseAmount(text: string): number | null {
   return Number(digits)
 }
 
+/**
+ * Lit une variation de montant saisie (avenant) : entier relatif, espaces tolérés, signe « - » ou « − ».
+ * Retourne null si le texte n'est pas un entier exploitable.
+ */
+export function parseSignedAmount(text: string): number | null {
+  const cleaned = text.replace(/[\s\u00a0\u202f]/g, '').replace('\u2212', '-')
+  if (!/^-?\d{1,15}$/.test(cleaned)) return null
+  return Number(cleaned)
+}
+
 /** « 6012, 6013 ; 6014 » -> ['6012', '6013', '6014'] (séparateurs : virgule ou point-virgule). */
 export function splitAccounts(text: string): string[] {
   return text

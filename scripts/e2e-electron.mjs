@@ -149,6 +149,13 @@ try {
       b.click()
       return true
     })()`)
+  const clickByText = (prefix) =>
+    evaluate(`(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(prefix)}))
+      if (!b || b.disabled) return false
+      b.click()
+      return true
+    })()`)
   const clickByLabel = (label) =>
     evaluate(`(() => {
       const b = document.querySelector('button[aria-label=' + JSON.stringify(${JSON.stringify(label)}) + ']')
@@ -594,6 +601,134 @@ try {
     )
   )
 
+  // 2e. Contrats et exécution, pilotés par l'INTERFACE réelle
+  check('clic « Procédures » (menu)', await clickButton('Procédures'))
+  await waitUntil(pageHas('Beta Construction'), 'liste des procédures')
+  check(
+    'ouverture de la procédure attribuée',
+    await clickByLabel('Ouvrir la procédure ' + REFERENCE)
+  )
+  await waitUntil(
+    pageHas('le marché peut être créé pour l’attributaire'),
+    'invitation à créer le marché'
+  )
+  check(
+    'interface : la procédure attribuée propose de créer le marché de l’attributaire',
+    await evaluate(pageHas('le marché peut être créé pour l’attributaire (Beta Construction)'))
+  )
+  check('clic « Créer le marché »', await clickButton('Créer le marché'))
+  await waitUntil(pageHas('Nouveau contrat'), 'formulaire de contrat')
+  await waitUntil(
+    `document.querySelector('#ct-object')?.value === ${JSON.stringify(OBJECT)}`,
+    'préremplissage du marché par la procédure'
+  )
+  check(
+    'interface : la procédure préremplit objet et montant de l’offre retenue (800 000 Ar)',
+    (await evaluate("document.querySelector('#ct-amount')?.value.replace(/\\s/g, '')")) === '800000'
+  )
+  await setField('#ct-reference', 'M-001/2026')
+  await setField('#ct-signed', '2026-02-01')
+  check('clic « Créer le contrat »', await clickButton('Créer le contrat'))
+  await waitUntil(pageHas('Contrat M-001/2026'), 'détail du contrat')
+  check(
+    'interface : marché créé pour l’attributaire, non démarré',
+    (await evaluate(pageHas('Titulaire Beta Construction'))) &&
+      (await evaluate(pageHas('Situation Non démarré'))) &&
+      (await evaluate(pageHas('Procédure ' + REFERENCE)))
+  )
+
+  const allowedOptions = () =>
+    evaluate(
+      "[...document.querySelectorAll('#ev-kind option')].map((o) => o.textContent).join('|')"
+    )
+  check(
+    'interface : au départ, seuls le démarrage et l’avenant sont proposés',
+    (await allowedOptions()) === 'Ordre de service de démarrage|Avenant',
+    await allowedOptions()
+  )
+  const addEventViaUi = async (kindCode, date, delta = '') => {
+    await waitUntil('!!document.querySelector("#ev-kind")', 'formulaire d’événement')
+    await setField('#ev-kind', kindCode)
+    await setField('#ev-date', date)
+    if (delta !== '') {
+      await waitUntil('!!document.querySelector("#ev-delta")', 'champ de variation')
+      await setField('#ev-delta', delta)
+    }
+    return clickButton('Enregistrer l’événement')
+  }
+  check('démarrage du contrat', await addEventViaUi('ORDRE_SERVICE_DEMARRAGE', '2026-02-15'))
+  await waitUntil(pageHas('Situation En cours d’exécution'), 'contrat en cours')
+  check('avenant de +150 000 Ar', await addEventViaUi('AVENANT', '2026-03-01', '150 000'))
+  await waitUntil(pageHas('Montant actuel 950 000 Ar'), 'montant actuel avec avenant')
+  check(
+    'interface : l’avenant porte le montant actuel à 950 000 Ar, le montant initial reste 800 000 Ar',
+    await evaluate(pageHas('Montant initial 800 000 Ar'))
+  )
+
+  check(
+    'un événement antérieur à la signature est tenté',
+    await addEventViaUi('ORDRE_SERVICE_ARRET', '2026-01-01')
+  )
+  await waitUntil(pageHas('précéder la date de signature'), 'refus daté avant la signature')
+  check('interface : une date antérieure à la signature est refusée avec le motif', true)
+
+  check('réception provisoire', await addEventViaUi('RECEPTION_PROVISOIRE', '2026-04-01'))
+  await waitUntil(pageHas('Situation Reçu provisoirement'), 'réception provisoire')
+  check(
+    'interface : après la réception provisoire, seule la réception définitive est proposée (plus d’avenant)',
+    (await allowedOptions()) === 'Réception définitive',
+    await allowedOptions()
+  )
+  check('réception définitive', await addEventViaUi('RECEPTION_DEFINITIVE', '2026-10-01'))
+  await waitUntil(pageHas('Situation Reçu définitivement'), 'réception définitive')
+  check('clôture du contrat', await addEventViaUi('CLOTURE', '2026-10-10'))
+  await waitUntil(pageHas('Le contrat est clôturé'), 'contrat clôturé')
+  check(
+    'interface : contrat clôturé, plus aucun événement possible',
+    (await evaluate(pageHas('Situation Clôturé'))) &&
+      !(await evaluate("!!document.querySelector('#ev-kind')"))
+  )
+  const shotContract = await send('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: true
+  })
+  writeFileSync(join(outputDir, '6-contrat.png'), Buffer.from(shotContract.data, 'base64'))
+
+  check(
+    'annulation du dernier événement (clôture)',
+    await clickButton('Annuler le dernier événement')
+  )
+  await waitUntil(pageHas('Confirmer l’annulation'), 'confirmation d’annulation')
+  check('confirmation', await clickByText('Confirmer l’annulation'))
+  await waitUntil(pageHas('Situation Reçu définitivement'), 'contrat rouvert')
+  check('interface : l’annulation de la clôture rouvre le contrat', true)
+  check('clôture à nouveau', await addEventViaUi('CLOTURE', '2026-10-10'))
+  await waitUntil(pageHas('Le contrat est clôturé'), 'contrat reclôturé')
+
+  check('clic « Retour à la liste »', await clickButton('Retour à la liste'))
+  await waitUntil(pageHas('M-001/2026'), 'contrat dans la liste')
+  check(
+    'interface : la liste des contrats indique type, titulaire, montant actuel et situation',
+    await evaluate(
+      "[...document.querySelectorAll('tbody tr')].some((r) => { const t = r.innerText.replace(/\\s/g, ' '); return t.includes('M-001/2026') && t.includes('Marché') && t.includes('Beta Construction') && t.includes('950 000 Ar') && t.includes('Clôturé') })"
+    )
+  )
+  const shotContracts = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '6a-contrats.png'), Buffer.from(shotContracts.data, 'base64'))
+
+  // Depuis la procédure, on retrouve son marché
+  check('clic « Procédures » (menu)', await clickButton('Procédures'))
+  await waitUntil(pageHas('Beta Construction'), 'liste des procédures')
+  await clickByLabel('Ouvrir la procédure ' + REFERENCE)
+  await waitUntil(pageHas('Ouvrir le marché'), 'lien vers le marché')
+  check(
+    'interface : la procédure renvoie vers son marché',
+    await evaluate(pageHas('a donné lieu au marché M-001/2026'))
+  )
+  check('clic « Ouvrir le marché »', await clickButton('Ouvrir le marché'))
+  await waitUntil(pageHas('Contrat M-001/2026'), 'marché ouvert depuis la procédure')
+  check('interface : le marché s’ouvre depuis la page de la procédure', true)
+
   // Même parcours côté API (la session de la région 1 est ouverte par l'interface)
   const plans = await evaluate('window.api.listPpms()')
   check(
@@ -728,6 +863,65 @@ try {
     dupBid.ok ? 'ACCEPTÉE !' : dupBid.error.code
   )
 
+  const contracts = await evaluate('window.api.listContracts()')
+  check(
+    'API : un contrat, clôturé, montant actuel 950 000 Ar',
+    contracts.ok &&
+      contracts.value.length === 1 &&
+      contracts.value[0].status === 'CLOSED' &&
+      contracts.value[0].currentAmount === 950000,
+    JSON.stringify(contracts.ok ? contracts.value[0] : contracts.error)
+  )
+  const contractId = contracts.value[0].id
+  const betaId = cands.value.find((c) => c.name === 'Beta Construction').id
+  const secondContract = await evaluate(
+    `window.api.createContract({kind:'MARCHE',procedureId:${JSON.stringify(procId)},reference:'M-002/2026',object:'Doublon',holderId:${JSON.stringify(betaId)},ppmLineId:null,amount:1,signedOn:null})`
+  )
+  check(
+    'API : un second marché pour la même procédure est refusé',
+    !secondContract.ok && secondContract.error.code === 'PROCEDURE_ALREADY_CONTRACTED',
+    secondContract.ok ? 'ACCEPTÉ !' : secondContract.error.code
+  )
+  const closedEvent = await evaluate(
+    `window.api.addContractEvent({contractId:${JSON.stringify(contractId)},kind:'AVENANT',occurredOn:'2026-11-01',amountDelta:1,note:null})`
+  )
+  check(
+    'API : aucun événement après la clôture',
+    !closedEvent.ok && closedEvent.error.code === 'CONTRACT_CLOSED',
+    closedEvent.ok ? 'ACCEPTÉ !' : closedEvent.error.code
+  )
+  const badKind = await evaluate(
+    `window.api.addContractEvent({contractId:${JSON.stringify(contractId)},kind:'AUTRE',occurredOn:'2026-11-01',amountDelta:null,note:null})`
+  )
+  check(
+    'API : un événement inconnu est rejeté à la frontière',
+    !badKind.ok && badKind.error.code === 'INVALID_REQUEST'
+  )
+  const delContract = await evaluate(
+    `window.api.deleteContract({contractId:${JSON.stringify(contractId)}})`
+  )
+  check(
+    'API : un contrat qui a des événements ne peut pas être supprimé',
+    !delContract.ok && delContract.error.code === 'CONTRACT_HAS_EVENTS',
+    delContract.ok ? 'SUPPRIMÉ !' : delContract.error.code
+  )
+  const delProc = await evaluate(
+    `window.api.deleteProcedure({procedureId:${JSON.stringify(procId)}})`
+  )
+  check(
+    'API : une procédure qui a un marché ne peut pas être supprimée',
+    !delProc.ok && delProc.error.code === 'PROCEDURE_IN_USE',
+    delProc.ok ? 'SUPPRIMÉE !' : delProc.error.code
+  )
+  const delHolder = await evaluate(
+    `window.api.deleteCandidate({candidateId:${JSON.stringify(betaId)}})`
+  )
+  check(
+    'API : le titulaire d’un contrat ne peut pas être supprimé',
+    !delHolder.ok && delHolder.error.code === 'CANDIDATE_IN_USE',
+    delHolder.ok ? 'SUPPRIMÉ !' : delHolder.error.code
+  )
+
   // Isolation : la région 2 ne voit rien du plan de la région 1
   const toRegion2 = await evaluate(
     `window.api.openRegion({regionId:${JSON.stringify(r2.value.region.id)},password:${JSON.stringify(P2)}})`
@@ -739,6 +933,16 @@ try {
   check('région 2 : aucune procédure visible', procsOf2.ok && procsOf2.value.length === 0)
   const candsOf2 = await evaluate('window.api.listCandidates()')
   check('région 2 : aucun candidat visible', candsOf2.ok && candsOf2.value.length === 0)
+  const contractsOf2 = await evaluate('window.api.listContracts()')
+  check('région 2 : aucun contrat visible', contractsOf2.ok && contractsOf2.value.length === 0)
+  const foreignContract = await evaluate(
+    `window.api.getContract({contractId:${JSON.stringify(contractId)}})`
+  )
+  check(
+    'région 2 : le contrat de la région 1 est introuvable même avec son identifiant',
+    !foreignContract.ok && foreignContract.error.code === 'CONTRACT_NOT_FOUND',
+    foreignContract.ok ? 'VISIBLE !' : foreignContract.error.code
+  )
   const foreignProc = await evaluate(
     `window.api.getProcedure({procedureId:${JSON.stringify(procId)}})`
   )
@@ -759,10 +963,17 @@ try {
     `window.api.openRegion({regionId:${JSON.stringify(r1.value.region.id)},password:${JSON.stringify(P1)}})`
   )
   const procsAgain = await evaluate('window.api.listProcedures()')
+  const contractsAgain = await evaluate('window.api.listContracts()')
   const plansAgain = await evaluate('window.api.listPpms()')
   check(
     'retour à la région 1 : le plan est toujours là',
     backTo1.ok && plansAgain.ok && plansAgain.value.length === 1
+  )
+  check(
+    'retour à la région 1 : le contrat clôturé est toujours là',
+    contractsAgain.ok &&
+      contractsAgain.value.length === 1 &&
+      contractsAgain.value[0].status === 'CLOSED'
   )
   check(
     'retour à la région 1 : la procédure et son avancement sont toujours là',
@@ -823,6 +1034,7 @@ try {
       bytes.includes(REFERENCE) ||
       bytes.includes('Beta Construction') ||
       bytes.includes('1234567890') ||
+      bytes.includes('M-001/2026') ||
       bytes.includes('CREATE TABLE')
     )
   })

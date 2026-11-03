@@ -7,6 +7,16 @@ import { CloseRegionUseCase, GetSessionUseCase } from '@application/regions/clos
 import { CreateRegionUseCase } from '@application/regions/create-region'
 import { ListRegionsUseCase } from '@application/regions/list-regions'
 import {
+  AddContractEventUseCase,
+  CreateContractUseCase,
+  DeleteContractUseCase,
+  GetContractUseCase,
+  ListContractableProceduresUseCase,
+  ListContractsUseCase,
+  RemoveLastContractEventUseCase,
+  UpdateContractUseCase
+} from '@application/contracts/contract-use-cases'
+import {
   CreateCandidateUseCase,
   DeleteCandidateUseCase,
   ListCandidatesUseCase,
@@ -102,7 +112,15 @@ function bootstrap(): RegionSession {
     addBid: new AddBidUseCase(session, ids),
     updateBid: new UpdateBidUseCase(session),
     removeBid: new RemoveBidUseCase(session),
-    setAward: new SetAwardUseCase(session)
+    setAward: new SetAwardUseCase(session),
+    listContracts: new ListContractsUseCase(session),
+    getContract: new GetContractUseCase(session),
+    createContract: new CreateContractUseCase(session, ids),
+    updateContract: new UpdateContractUseCase(session),
+    deleteContract: new DeleteContractUseCase(session),
+    addContractEvent: new AddContractEventUseCase(session, ids),
+    removeLastContractEvent: new RemoveLastContractEventUseCase(session),
+    listContractableProcedures: new ListContractableProceduresUseCase(session)
   })
   createMainWindow()
   return session

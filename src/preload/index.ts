@@ -78,7 +78,31 @@ const api: PrmpApi = {
       PrmpApi['updateCandidate']
     >,
   deleteCandidate: (input) =>
-    ipcRenderer.invoke(IpcChannels.candidateDelete, input) as ReturnType<PrmpApi['deleteCandidate']>
+    ipcRenderer.invoke(IpcChannels.candidateDelete, input) as ReturnType<
+      PrmpApi['deleteCandidate']
+    >,
+  listContracts: () =>
+    ipcRenderer.invoke(IpcChannels.contractList) as ReturnType<PrmpApi['listContracts']>,
+  getContract: (input) =>
+    ipcRenderer.invoke(IpcChannels.contractGet, input) as ReturnType<PrmpApi['getContract']>,
+  createContract: (input) =>
+    ipcRenderer.invoke(IpcChannels.contractCreate, input) as ReturnType<PrmpApi['createContract']>,
+  updateContract: (input) =>
+    ipcRenderer.invoke(IpcChannels.contractUpdate, input) as ReturnType<PrmpApi['updateContract']>,
+  deleteContract: (input) =>
+    ipcRenderer.invoke(IpcChannels.contractDelete, input) as ReturnType<PrmpApi['deleteContract']>,
+  addContractEvent: (input) =>
+    ipcRenderer.invoke(IpcChannels.contractAddEvent, input) as ReturnType<
+      PrmpApi['addContractEvent']
+    >,
+  removeLastContractEvent: (input) =>
+    ipcRenderer.invoke(IpcChannels.contractRemoveLastEvent, input) as ReturnType<
+      PrmpApi['removeLastContractEvent']
+    >,
+  listContractableProcedures: () =>
+    ipcRenderer.invoke(IpcChannels.contractableProcedureList) as ReturnType<
+      PrmpApi['listContractableProcedures']
+    >
 }
 
 contextBridge.exposeInMainWorld('api', api)

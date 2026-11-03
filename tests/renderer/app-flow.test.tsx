@@ -114,7 +114,7 @@ describe('espace de travail', () => {
     expect(screen.getByText('PRMP de Fianarantsoa')).toBeDefined()
   })
 
-  it('la navigation signale la page courante ; seul le module à venir reste inactif', async () => {
+  it('la navigation signale la page courante et donne accès à tous les modules', async () => {
     const api = installApiMock()
     api.getRegionsOverview.mockResolvedValue(ok(withOne))
     api.getSession.mockResolvedValue(ok({ region: { id: 'r1', name: 'Région 1' } }))
@@ -124,14 +124,11 @@ describe('espace de travail', () => {
     expect(within(nav).getByRole('button', { name: 'Accueil' }).getAttribute('aria-current')).toBe(
       'page'
     )
-    expect(within(nav).getByRole('button', { name: 'Procédures' }).hasAttribute('disabled')).toBe(
-      false
-    )
-    expect(
-      within(nav)
-        .getByRole('button', { name: /^Contrats/ })
-        .hasAttribute('disabled')
-    ).toBe(true)
+    for (const name of ['Plan de passation (PPM)', 'Procédures', 'Candidats', 'Contrats']) {
+      expect(within(nav).getByRole('button', { name }).hasAttribute('disabled')).toBe(false)
+    }
+    expect(within(nav).queryByText('Bientôt')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Paramètres' }).hasAttribute('disabled')).toBe(false)
   })
 
   it('invite à renseigner le nom de la PRMP quand il manque, puis l’affiche une fois enregistré', async () => {

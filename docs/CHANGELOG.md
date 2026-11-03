@@ -2,6 +2,15 @@
 
 ## [Non publié]
 
+### Phase 7 — Contrats et exécution (2026-11-01)
+
+- Domaine : situation d'exécution dérivée, succession des événements (ordres de service, réceptions, avenants, clôture), contrôle des dates et du montant, annulation du dernier événement, gel du montant et de la signature (ADR-029).
+- Application : 8 cas d'utilisation ; un marché naît d'une procédure attribuée, son titulaire est l'attributaire, un seul marché par procédure ; la vue d'une procédure indique son marché et si elle peut en créer un.
+- IPC : 8 canaux `contract:*` et `procedure:list-contractable`.
+- Interface : l'entrée « Contrats » du menu est active (plus aucun module « Bientôt ») ; liste, création préremplie depuis une procédure, détail avec l'exécution, modification de l'en-tête, suppression en deux clics ; section « Marché » dans la page d'une procédure attribuée.
+- Tests : 460 tests ; e2e 144 vérifications ; 10 mutations détectées. Captures : docs/captures/11 et 12.
+- Aucune migration de base.
+
 ### Phase 6 — Candidats et offres (2026-10-19)
 
 - Domaine : offres modifiables (montant, retrait), désignation d'une seule offre retenue, verrou des offres après l'attribution, attribution exigeant une offre retenue ; NIF normalisé.
