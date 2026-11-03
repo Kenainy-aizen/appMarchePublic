@@ -51,5 +51,10 @@ export function detailOf(
   repositories: RegionRepositories,
   procedure: Procedure
 ): ProcedureDetailView {
-  return toDetailView(procedure, repositories.ppms.list(), repositories.candidates.list())
+  return toDetailView(
+    procedure,
+    repositories.ppms.list(),
+    repositories.candidates.list(),
+    repositories.contracts.list()
+  )
 }

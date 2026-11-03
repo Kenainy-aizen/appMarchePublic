@@ -1,11 +1,11 @@
 # PROGRESS — Suivi des marchés publics (PRMP, version locale)
 
 > Mémoire du projet. À lire EN PREMIER à chaque reprise de conversation.
-> Dernière mise à jour : 2026-10-19 (Phase 6 livrée, en attente de validation)
+> Dernière mise à jour : 2026-11-01 (Phase 7 livrée, en attente de validation)
 
 ## Phase courante
 
-**Phase 6 — Candidats et offres** (code terminé, EN ATTENTE de validation par l'utilisateur)
+**Phase 7 — Contrats et exécution** (code terminé, EN ATTENTE de validation par l'utilisateur)
 
 ## Contexte en bref
 
@@ -25,8 +25,8 @@ Développement sous Linux ; cible Windows 10.
 | 4   | Plan de passation (PPM)                                               | TERMINÉ                  |
 | 4b  | Nom de la PRMP au premier lancement + refonte de l'interface          | TERMINÉ                  |
 | 5   | Procédures de passation et suivi des étapes                           | TERMINÉ                  |
-| 6   | Candidats / soumissionnaires et offres                                | EN ATTENTE DE VALIDATION |
-| 7   | Contrats et exécution (OS, réceptions, avenants, clôture)             | À FAIRE                  |
+| 6   | Candidats / soumissionnaires et offres                                | TERMINÉ                  |
+| 7   | Contrats et exécution (OS, réceptions, avenants, clôture)             | EN ATTENTE DE VALIDATION |
 | 8   | Documents joints                                                      | À FAIRE                  |
 | 9   | Alertes d'échéances                                                   | À FAIRE                  |
 | 10  | Tableau de bord                                                       | À FAIRE                  |
@@ -64,9 +64,14 @@ Développement sous Linux ; cible Windows 10.
 - 2026-10-19 — Phase 5 validée par l'utilisateur (« tout le test passe, on continue »).
 - 2026-10-19 — Phase 6 : candidats (liste, création, modification, suppression), offres d'une procédure (ajout, montant, retrait, offre retenue), verrou après l'attribution, attribution exigeant une offre retenue (ADR-028). Vérifié sous Linux : types, lint, 359 tests, build, e2e 106/106 (parcours entier par de vrais clics), 8 mutations toutes détectées. Défaut corrigé sur la capture : le bouton « Ne plus retenir » passait sur trois lignes. Non vérifié : Windows 10.
 - 2026-10-19 — INCIDENT : l'environnement de travail a été réinitialisé en cours de Phase 6 (dossier de travail non encore livré perdu). La Phase 6 a été refaite à partir de la livraison de la Phase 5, puis revérifiée en entier (mêmes résultats : 359 tests, e2e 106/106, 8 mutations détectées). Mesure prise : le travail en cours est désormais copié dans un dossier persistant à chaque grande étape. Aucune conséquence pour le code livré.
+- 2026-11-01 — Phase 6 validée par l'utilisateur (« le test a tout passé, alors continue »).
+- 2026-11-01 — Phase 7 : contrats (marché, convention, achat direct) et leur exécution ; le marché naît d'une procédure attribuée ; événements dans un ordre contrôlé ; annulation du dernier événement (ADR-029). Vérifié sous Linux : types, lint, 460 tests, build, e2e 144/144 (parcours entier par de vrais clics), 10 mutations toutes détectées. Non vérifié : Windows 10.
+- 2026-11-01 — INCIDENT (deuxième fois) : l'environnement de travail a été réinitialisé pendant la Phase 7. Grâce à la sauvegarde périodique mise en place après le premier incident, seule l'extension du test de bout en bout (parcours des contrats) a dû être refaite ; tout a été revérifié (460 tests, e2e 144/144, 10 mutations). Mesure renforcée : sauvegarde après chaque étape significative.
+- 2026-11-01 — Constat de méthode : une première série de mutations avait une mutation non appliquée (motif introuvable après reformatage) et l'avait laissé passer sans le dire ; elle a été refaite et vérifiée une à une (10 sur 10 appliquées et détectées).
 
 ## Décisions en attente
 
+- ADR-029 : règles des contrats et de leur exécution (succession des événements, dates, avenants sans plafond, annulation du dernier événement, gel de l'en-tête, suppression) ; à confirmer avec la PRMP, notamment un éventuel plafond d'avenants.
 - ADR-028 : règles des candidats et des offres (NIF unique, suppression refusée si offre ou contrat, offre retenue unique, attribution exigeant une offre retenue, verrou après attribution) ; à confirmer avec la PRMP.
 - ADR-027 : règles de succession des étapes d'une procédure (ordre, validation, réouverture, verrouillage, mode, référence unique, suppression) ; à confirmer avec la PRMP, c'est la question la plus importante avant la Phase 6.
 - ADR-025 : « nom de la PRMP » = institution ou personne responsable ? (champ libre : les deux conviennent) ; à confirmer.
@@ -76,14 +81,14 @@ Développement sous Linux ; cible Windows 10.
 
 ## Prochaines actions
 
-1. L'utilisateur intègre le zip de la Phase 6 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à faire à la main : menu « Candidats » > créer deux candidats (essayer un NIF en double) ; menu « Procédures » > ouvrir une procédure > « Offres reçues » > saisir deux offres ; essayer de valider l'attribution sans offre retenue ; retenir une offre ; valider l'attribution ; constater que les offres sont verrouillées ; rouvrir l'attribution ; essayer de supprimer un candidat qui a une offre.
-2. Faire confirmer par la PRMP : règles des offres (ADR-028), règles de succession des étapes (ADR-027), comportement du plan (ADR-023).
-3. Valider la Phase 6.
-4. Démarrer la Phase 7 : contrats et exécution. Question à poser avant de coder : un marché se crée-t-il à partir d'une procédure attribuée (reprenant l'attributaire et le montant de l'offre retenue), et quels événements d'exécution suivre (ordre de service, réceptions, avenants, clôture : voir ADR-014) ? Tous les cas d'utilisation passent par `RegionSession.requireWorkspace()`.
+1. L'utilisateur intègre le zip de la Phase 7 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à la main : ouvrir une procédure dont l'attribution est validée > « Créer le marché » (objet, montant et titulaire préremplis) ; saisir la date de signature ; enregistrer le démarrage, un avenant, la réception provisoire, la réception définitive, la clôture ; essayer une date avant la signature ; annuler le dernier événement ; créer un achat direct depuis « Contrats » ; vérifier qu'une procédure qui a un marché ne peut plus être supprimée.
+2. Faire confirmer par la PRMP : règles des contrats (ADR-029), des offres (ADR-028), des étapes (ADR-027), du plan (ADR-023).
+3. Valider la Phase 7.
+4. Démarrer la Phase 8 : documents joints (scans de PV, avis, contrats), avec stockage des fichiers dans le dossier de la région, chiffrés comme la base : question préalable, à quels objets les rattacher (procédure, contrat, candidat) et quels formats accepter ?
 
 ## Points à reprendre dans les phases suivantes
 
-- Phase 7 : un contrat « marché » est rattaché à une procédure (règle de la base) ; reprendre l'attributaire et le montant de l'offre retenue pour préremplir. Un candidat titulaire d'un contrat ne peut pas être supprimé (déjà en place).
+- Phase 8 : les fichiers joints doivent être chiffrés comme la base (une clé par région) et sauvegardés avec elle ; prévoir la migration 002 (table des documents).
 - Phase 9 : les alertes d'échéances s'appuieront sur les dates prévues des étapes (déjà saisissables) et sur les dates prévisionnelles des lignes du plan.
 - Accueil : afficher le nombre de procédures en cours (non fait en Phase 5, pour garder la phase ciblée).
 - Phase 12 : permettre de DÉFINIR un nouveau mot de passe avec la clé de récupération (écran « Mot de passe oublié » + cas d'utilisation) ; changer le mot de passe (ancien requis) ; RÉGÉNÉRER la clé de récupération région ouverte ; renommer une région ; sauvegarde et restauration : la sauvegarde doit inclure `regions.json` ET les fichiers `regions/*.sqlite` (sans le registre, les bases sont inutilisables).

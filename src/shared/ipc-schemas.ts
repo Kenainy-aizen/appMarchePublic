@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { METHOD_CODES, NATURE_CODES } from './ppm-options'
+import { CONTRACT_EVENT_CODES, CONTRACT_KIND_CODES } from './contract-options'
 import { STEP_CODES } from './procedure-options'
 
 /**
@@ -112,3 +113,35 @@ export const updateBidInputSchema = z.object({
 export const removeBidInputSchema = z.object({ procedureId: idField, bidId: idField })
 /** `bidId` = null retire la désignation de l'offre retenue. */
 export const setAwardInputSchema = z.object({ procedureId: idField, bidId: idField.nullable() })
+
+// --- Contrats et exécution ---
+const contractFields = {
+  reference: z.string().max(100),
+  object: z.string().max(2000),
+  holderId: idField,
+  ppmLineId: idField.nullable(),
+  amount: amountField,
+  signedOn: dateField
+}
+
+export const createContractInputSchema = z.object({
+  kind: z.enum(CONTRACT_KIND_CODES),
+  /** Procédure d'origine : obligatoire pour un marché, interdite pour une convention ou un achat direct. */
+  procedureId: idField.nullable(),
+  ...contractFields
+})
+export const updateContractInputSchema = z.object({ contractId: idField, ...contractFields })
+export const contractIdInputSchema = z.object({ contractId: idField })
+export const addContractEventInputSchema = z.object({
+  contractId: idField,
+  kind: z.enum(CONTRACT_EVENT_CODES),
+  occurredOn: z.string().max(10),
+  /** Variation de montant : obligatoire pour un avenant, ignorée sinon. */
+  amountDelta: z
+    .number()
+    .int()
+    .min(-Number.MAX_SAFE_INTEGER)
+    .max(Number.MAX_SAFE_INTEGER)
+    .nullable(),
+  note: z.string().max(500).nullable()
+})

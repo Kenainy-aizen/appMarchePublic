@@ -1,7 +1,7 @@
 import type { AppInfoDto } from '@shared/api'
 import { FlagMark, Icon, type IconName } from '../ui/Icon'
 
-export type SectionId = 'home' | 'ppm' | 'procedures' | 'candidates' | 'settings'
+export type SectionId = 'home' | 'ppm' | 'procedures' | 'candidates' | 'contracts' | 'settings'
 
 interface NavEntry {
   readonly id: SectionId | null
@@ -16,7 +16,7 @@ const MAIN_NAV: readonly NavEntry[] = [
   { id: 'ppm', label: 'Plan de passation (PPM)', icon: 'list' },
   { id: 'procedures', label: 'Procédures', icon: 'briefcase' },
   { id: 'candidates', label: 'Candidats', icon: 'users' },
-  { id: null, label: 'Contrats', icon: 'contract', soon: true }
+  { id: 'contracts', label: 'Contrats', icon: 'contract' }
 ]
 
 interface Props {

@@ -14,11 +14,21 @@ interface Props {
   readonly procedureId: string
   readonly onEdit: (procedure: ProcedureDetailDto) => void
   readonly onBack: () => void
+  /** Va créer le marché de cette procédure (attribution validée, pas encore de marché). */
+  readonly onCreateContract: (procedureId: string) => void
+  /** Va ouvrir le marché déjà créé pour cette procédure. */
+  readonly onOpenContract: (contractId: string) => void
 }
 
 const label = (kind: string): string => STEP_LABELS[kind as StepCode]
 
-export function ProcedureDetailScreen({ procedureId, onEdit, onBack }: Props): React.JSX.Element {
+export function ProcedureDetailScreen({
+  procedureId,
+  onEdit,
+  onBack,
+  onCreateContract,
+  onOpenContract
+}: Props): React.JSX.Element {
   const [detail, setDetail] = useState<ProcedureDetailDto | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -317,6 +327,51 @@ export function ProcedureDetailScreen({ procedureId, onEdit, onBack }: Props): R
       </section>
 
       <BidsPanel detail={detail} onChange={setDetail} />
+
+      {(detail.contract !== null || detail.canCreateContract) && (
+        <section className="panel" aria-labelledby="contract-title">
+          <h2 className="panel__title" id="contract-title">
+            Marché
+          </h2>
+          {detail.contract ? (
+            <>
+              <p className="panel__lead">
+                Cette procédure a donné lieu au marché <strong>{detail.contract.reference}</strong>.
+              </p>
+              <div className="actions" style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    if (detail.contract) onOpenContract(detail.contract.id)
+                  }}
+                >
+                  <Icon name="contract" size={16} />
+                  Ouvrir le marché
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="panel__lead">
+                L’attribution est validée : le marché peut être créé pour l’attributaire
+                {detail.awardedCandidate ? ` (${detail.awardedCandidate})` : ''}.
+              </p>
+              <div className="actions" style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCreateContract(detail.id)
+                  }}
+                >
+                  <Icon name="plus" size={16} />
+                  Créer le marché
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       <div className="danger-zone">
         {confirmDelete ? (

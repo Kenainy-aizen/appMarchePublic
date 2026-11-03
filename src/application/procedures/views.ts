@@ -1,6 +1,7 @@
 import type { Candidate } from '@domain/candidate'
+import type { Contract } from '@domain/contract'
 import type { Ppm } from '@domain/ppm'
-import { bidsLocked, type Procedure, procedureProgress } from '@domain/procedure'
+import { bidsLocked, findStep, type Procedure, procedureProgress } from '@domain/procedure'
 
 export interface ProcedureSummaryView {
   readonly id: string
@@ -48,6 +49,8 @@ export interface ProcedureDetailView extends ProcedureSummaryView {
   }[]
   readonly bids: readonly BidView[]
   readonly bidsLocked: boolean
+  readonly contract: { readonly id: string; readonly reference: string } | null
+  readonly canCreateContract: boolean
 }
 
 function candidateName(candidates: readonly Candidate[], candidateId: string): string {
@@ -91,11 +94,21 @@ export function listLineChoices(ppms: readonly Ppm[]): PpmLineChoiceView[] {
   )
 }
 
+/** Attribution validée (donc une offre retenue) : la procédure peut déboucher sur un marché. */
+export function isAwarded(procedure: Procedure): boolean {
+  return (
+    findStep(procedure, 'ATTRIBUTION').validatedOn !== null &&
+    procedure.bids.some((bid) => bid.awarded)
+  )
+}
+
 export function toDetailView(
   procedure: Procedure,
   ppms: readonly Ppm[],
-  candidates: readonly Candidate[]
+  candidates: readonly Candidate[],
+  contracts: readonly Contract[]
 ): ProcedureDetailView {
+  const contract = contracts.find((candidate) => candidate.procedureId === procedure.id) ?? null
   const choice =
     procedure.ppmLineId === null
       ? null
@@ -126,6 +139,8 @@ export function toDetailView(
       amount: bid.amount,
       awarded: bid.awarded
     })),
-    bidsLocked: bidsLocked(procedure)
+    bidsLocked: bidsLocked(procedure),
+    contract: contract === null ? null : { id: contract.id, reference: contract.reference },
+    canCreateContract: contract === null && isAwarded(procedure)
   }
 }

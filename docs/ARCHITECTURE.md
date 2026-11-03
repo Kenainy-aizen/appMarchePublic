@@ -292,3 +292,44 @@ mot de passe -> scrypt -> clé qui déchiffre l'enveloppe -> clé de données (D
 - Contrôle par mutation : 8 régressions volontaires (attribution sans offre retenue, verrou ignoré, plusieurs offres retenues, NIF en double, suppression d'un candidat ayant une offre, offre d'un candidat inconnu, verrou ignoré par l'interface, candidat déjà en offre proposé) sont toutes détectées.
 - Offres et offre retenue survivent à un redémarrage ; changer l'offre retenue fonctionne en base dans les deux sens ; candidats et offres d'une région sont invisibles depuis une autre.
 - Test de bout en bout : 106 vérifications, dont le parcours entier par de vrais clics (créer deux candidats, refus d'un NIF en double, saisir deux offres, refus de l'attribution sans offre retenue, retenir une offre, valider, verrou, réouverture) et l'absence de tout nom ou NIF lisible dans les fichiers chiffrés.
+
+## 14. Phase 7 — Contrats et exécution
+
+### Fichiers
+
+    src/domain/contract.ts                       + contractStatus, allowedEventKinds, addContractEvent, removeLastContractEvent,
+                                                   updateContractDetails, libellés et parse des codes
+    src/application/contracts/                   contract-use-cases (liste, détail, création, modification, suppression,
+                                                 ajout et annulation d'événement, procédures à contractualiser),
+                                                 contract-access.ts, views.ts
+    src/application/procedures/views.ts          + isAwarded, `contract` et `canCreateContract` dans le détail d'une procédure
+    src/shared/contract-options.ts               types, événements, situations et libellés (un test les compare au domaine)
+    src/main/ipc/register-contract-handlers.ts   8 canaux
+    src/renderer/src/screens/contracts/          ContractModule, ContractListScreen, ContractForm, ContractDetailScreen
+    tests/domain/contract-execution.test.ts, tests/application/contracts.test.ts,
+    tests/integration/contract-real-database.test.ts, tests/renderer/contract-screens.test.tsx
+
+### Canaux IPC (tous exigent une région ouverte, sinon `NO_ACTIVE_REGION`)
+
+| Canal                       | Entrée                                                                          | Résultat                          |
+| --------------------------- | ------------------------------------------------------------------------------- | --------------------------------- |
+| contract:list               | —                                                                               | résumés                           |
+| contract:get                | `contractId`                                                                    | détail + événements               |
+| contract:create             | type, procédure ou null, référence, objet, titulaire, ligne, montant, signature | détail                            |
+| contract:update             | idem sans le type + `contractId`                                                | détail                            |
+| contract:delete             | `contractId`                                                                    | null                              |
+| contract:add-event          | `contractId`, type, date, variation ou null, note                               | détail                            |
+| contract:remove-last-event  | `contractId`                                                                    | détail                            |
+| procedure:list-contractable | —                                                                               | procédures attribuées sans marché |
+
+### Où vit chaque règle
+
+- Domaine : succession des événements, dates, montant sous zéro, situation dérivée, gel de l'en-tête.
+- Application : marché issu d'une procédure attribuée, titulaire = attributaire, un marché par procédure, références uniques, suppression d'un contrat avec événements.
+- Interface : ne propose que les événements autorisés (fournis par le processus principal), préremplit le marché depuis la procédure ; le domaine reste l'autorité.
+
+### Garanties vérifiées par des tests
+
+- Contrôle par mutation : 10 régressions volontaires (succession des événements, dates, avenant sous zéro, titulaire différent de l'attributaire, second marché, suppression d'un contrat démarré, gel de l'en-tête dans le domaine et dans l'interface, bouton « Créer le marché » trop permissif) sont toutes détectées.
+- Marché, événements et situation survivent à un redémarrage ; l'annulation du dernier événement (clôture comprise) est enregistrée en base ; les contrats d'une région sont invisibles depuis une autre.
+- Test de bout en bout : 144 vérifications, dont le parcours entier par de vrais clics (créer le marché depuis la procédure, démarrage, avenant, refus d'une date avant la signature, réceptions, clôture, annulation de la clôture, retour vers la procédure) et l'absence de toute référence de contrat lisible dans les fichiers chiffrés.

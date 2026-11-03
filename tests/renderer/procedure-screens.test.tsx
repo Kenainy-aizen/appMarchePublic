@@ -40,6 +40,8 @@ const detail = (overrides: Partial<ProcedureDetailDto> = {}): ProcedureDetailDto
   ppmLine: null,
   bids: [],
   bidsLocked: false,
+  contract: null,
+  canCreateContract: false,
   steps: KINDS.map((kind) => step(kind)),
   ...overrides
 })
@@ -247,11 +249,23 @@ describe('ProcedureDetailScreen', () => {
   const renderDetail = (): {
     onBack: ReturnType<typeof vi.fn>
     onEdit: ReturnType<typeof vi.fn>
+    onCreateContract: ReturnType<typeof vi.fn>
+    onOpenContract: ReturnType<typeof vi.fn>
   } => {
     const onBack = vi.fn()
     const onEdit = vi.fn()
-    render(<ProcedureDetailScreen procedureId="p1" onEdit={onEdit} onBack={onBack} />)
-    return { onBack, onEdit }
+    const onCreateContract = vi.fn()
+    const onOpenContract = vi.fn()
+    render(
+      <ProcedureDetailScreen
+        procedureId="p1"
+        onEdit={onEdit}
+        onBack={onBack}
+        onCreateContract={onCreateContract}
+        onOpenContract={onOpenContract}
+      />
+    )
+    return { onBack, onEdit, onCreateContract, onOpenContract }
   }
 
   it('affiche l’en-tête, l’avancement et les cinq étapes, la prochaine étant signalée', async () => {
@@ -432,5 +446,44 @@ describe('ProcedureDetailScreen', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('Cette procédure n’existe pas.')
     await userEvent.setup().click(screen.getByRole('button', { name: 'Retour à la liste' }))
     expect(onBack).toHaveBeenCalled()
+  })
+
+  it('propose de créer le marché quand l’attribution est validée et qu’il n’existe pas encore', async () => {
+    const user = userEvent.setup()
+    installApiMock().getProcedure.mockResolvedValue(
+      ok(detail({ canCreateContract: true, awardedCandidate: 'SARL Alpha' }))
+    )
+    const { onCreateContract } = renderDetail()
+    await screen.findByRole('heading', { name: /Procédure/ })
+
+    expect(
+      screen.getByText(/le marché peut être créé pour l’attributaire \(SARL Alpha\)/)
+    ).toBeDefined()
+    await user.click(screen.getByRole('button', { name: 'Créer le marché' }))
+
+    expect(onCreateContract).toHaveBeenCalledWith('p1')
+  })
+
+  it('renvoie vers le marché existant', async () => {
+    const user = userEvent.setup()
+    installApiMock().getProcedure.mockResolvedValue(
+      ok(detail({ contract: { id: 'k1', reference: 'M-001/2026' } }))
+    )
+    const { onOpenContract } = renderDetail()
+    await screen.findByRole('heading', { name: /Procédure/ })
+
+    expect(screen.getByText('M-001/2026')).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Créer le marché' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ouvrir le marché' }))
+
+    expect(onOpenContract).toHaveBeenCalledWith('k1')
+  })
+
+  it('n’affiche aucune section « Marché » tant que l’attribution n’est pas validée', async () => {
+    installApiMock().getProcedure.mockResolvedValue(ok(detail()))
+    renderDetail()
+    await screen.findByRole('heading', { name: /Procédure/ })
+
+    expect(screen.queryByRole('heading', { name: 'Marché' })).toBeNull()
   })
 })

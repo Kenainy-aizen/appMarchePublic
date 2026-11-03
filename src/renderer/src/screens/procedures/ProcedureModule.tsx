@@ -10,8 +10,13 @@ type View =
   | { readonly kind: 'detail'; readonly procedureId: string }
   | { readonly kind: 'edit'; readonly procedure: ProcedureDetailDto }
 
+interface Props {
+  readonly onCreateContract: (procedureId: string) => void
+  readonly onOpenContract: (contractId: string) => void
+}
+
 /** Module « Procédures » : liste, création, détail avec ses étapes, modification de l'en-tête. */
-export function ProcedureModule(): React.JSX.Element {
+export function ProcedureModule({ onCreateContract, onOpenContract }: Props): React.JSX.Element {
   const [view, setView] = useState<View>({ kind: 'list' })
 
   if (view.kind === 'create') {
@@ -53,6 +58,8 @@ export function ProcedureModule(): React.JSX.Element {
         onBack={() => {
           setView({ kind: 'list' })
         }}
+        onCreateContract={onCreateContract}
+        onOpenContract={onOpenContract}
       />
     )
   }

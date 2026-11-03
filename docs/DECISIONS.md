@@ -236,3 +236,25 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Une offre peut être saisie à n'importe quel stade de la procédure (pas seulement après l'ouverture des plis) : choix volontairement souple, à resserrer si la PRMP le demande.
 - La liste des procédures indique l'attributaire (nom du candidat dont l'offre est retenue).
 - Aucune migration : les tables `candidate` et `bid` de la migration 001 couvraient ce besoin ; l'unicité d'une seule offre retenue par procédure était déjà garantie par un index de la base.
+
+## ADR-029 — Contrats et exécution (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-11-01).
+- Types : marché, convention, achat direct. Seul un **marché** se rattache à une procédure ; une convention ou un achat direct n'en ont pas (refus explicite).
+- Création d'un marché : la procédure doit avoir son **attribution validée** (donc une offre retenue) ; le **titulaire est l'attributaire** (non modifiable ensuite) ; **un seul marché par procédure**. Depuis la page d'une procédure attribuée, « Créer le marché » préremplit objet, montant de l'offre retenue et ligne du plan.
+- Référence unique par région (majuscules et espaces ignorés). Date de signature facultative à la création, mais **nécessaire pour enregistrer un événement**.
+- Événements d'exécution et succession (ordre fixe) :
+  - non démarré : démarrage ou avenant ;
+  - en cours : arrêt, réception provisoire ou avenant ;
+  - arrêté : reprise ou avenant ;
+  - reçu provisoirement : réception définitive seulement (plus d'avenant, plus d'ordre de service) ;
+  - reçu définitivement : clôture seulement ;
+  - clôturé : plus rien.
+- Dates : jamais avant la signature, jamais avant l'événement précédent (même date acceptée).
+- Avenants : variation de montant positive, négative ou nulle ; le montant actuel (initial + avenants) ne peut pas passer sous zéro. Aucun plafond d'avenants n'est contrôlé (la réglementation en prévoit peut-être un : à vérifier avec la PRMP).
+- Correction : on peut **annuler le dernier événement** (y compris la clôture, ce qui rouvre le contrat), jamais un événement du milieu.
+- En-tête : le montant initial et la date de signature se figent dès le premier événement ; le reste (référence, objet, ligne du plan, titulaire d'une convention ou d'un achat direct) reste modifiable.
+- Suppression : refusée si le contrat a des événements (les annuler d'abord, du plus récent au plus ancien). Les liens protègent désormais : une procédure ayant un marché, un candidat titulaire et une ligne du plan utilisée par un contrat ne peuvent plus être supprimés (règles des phases 4 à 6, désormais effectives de bout en bout).
+- Situation d'exécution dérivée, jamais stockée.
+- Non modélisé : TEF, retrait de contrat, garanties, retenues, paiements, pénalités.
+- Aucune migration : les tables `contract` et `contract_event` de la migration 001 couvraient le besoin.

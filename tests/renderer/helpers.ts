@@ -51,7 +51,17 @@ export function installApiMock(): ApiMock {
     listCandidates: vi.fn<PrmpApi['listCandidates']>().mockResolvedValue(ok([])),
     createCandidate: vi.fn<PrmpApi['createCandidate']>(),
     updateCandidate: vi.fn<PrmpApi['updateCandidate']>(),
-    deleteCandidate: vi.fn<PrmpApi['deleteCandidate']>().mockResolvedValue(ok(null))
+    deleteCandidate: vi.fn<PrmpApi['deleteCandidate']>().mockResolvedValue(ok(null)),
+    listContracts: vi.fn<PrmpApi['listContracts']>().mockResolvedValue(ok([])),
+    getContract: vi.fn<PrmpApi['getContract']>(),
+    createContract: vi.fn<PrmpApi['createContract']>(),
+    updateContract: vi.fn<PrmpApi['updateContract']>(),
+    deleteContract: vi.fn<PrmpApi['deleteContract']>().mockResolvedValue(ok(null)),
+    addContractEvent: vi.fn<PrmpApi['addContractEvent']>(),
+    removeLastContractEvent: vi.fn<PrmpApi['removeLastContractEvent']>(),
+    listContractableProcedures: vi
+      .fn<PrmpApi['listContractableProcedures']>()
+      .mockResolvedValue(ok([]))
   }
   Object.defineProperty(window, 'api', { value: api, configurable: true, writable: true })
   return api

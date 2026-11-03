@@ -5,6 +5,7 @@ import { AppShell, type SectionId } from '../layouts/AppShell'
 import { Alert } from '../ui/Alert'
 import { HomeSection } from './HomeSection'
 import { CandidateModule } from './candidates/CandidateModule'
+import { ContractModule, type ContractIntent } from './contracts/ContractModule'
 import { PpmModule } from './ppm/PpmModule'
 import { ProcedureModule } from './procedures/ProcedureModule'
 import { SettingsScreen } from './SettingsScreen'
@@ -27,6 +28,13 @@ export function WorkspaceScreen({
 }: Props): React.JSX.Element {
   const [section, setSection] = useState<SectionId>('home')
   const [error, setError] = useState<string | null>(null)
+  const [contractIntent, setContractIntent] = useState<ContractIntent | null>(null)
+
+  /** Va au module des contrats, avec ou sans demande précise (créer un marché, ouvrir un contrat). */
+  function goToContracts(intent: ContractIntent | null): void {
+    setContractIntent(intent)
+    setSection('contracts')
+  }
 
   async function switchRegion(): Promise<void> {
     try {
@@ -43,7 +51,10 @@ export function WorkspaceScreen({
       regionName={region.name}
       appInfo={appInfo}
       section={section}
-      onNavigate={setSection}
+      onNavigate={(next) => {
+        if (next === 'contracts') setContractIntent(null)
+        setSection(next)
+      }}
       onSwitchRegion={() => void switchRegion()}
     >
       {error && <Alert tone="error">{error}</Alert>}
@@ -55,8 +66,18 @@ export function WorkspaceScreen({
         />
       )}
       {section === 'ppm' && <PpmModule />}
-      {section === 'procedures' && <ProcedureModule />}
+      {section === 'procedures' && (
+        <ProcedureModule
+          onCreateContract={(procedureId) => {
+            goToContracts({ kind: 'create', procedureId })
+          }}
+          onOpenContract={(contractId) => {
+            goToContracts({ kind: 'open', contractId })
+          }}
+        />
+      )}
       {section === 'candidates' && <CandidateModule />}
+      {section === 'contracts' && <ContractModule intent={contractIntent} />}
       {section === 'settings' && (
         <SettingsScreen
           organizationName={organizationName}
