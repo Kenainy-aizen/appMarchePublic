@@ -87,3 +87,37 @@ describe('cohérence schéma / domaine (garde-fou contre la dérive)', () => {
     expect(accepts(methodSql, 'INCONNU')).toBe(false)
   })
 })
+
+describe('migration 002 (documents joints)', () => {
+  it('met à niveau une base de la version 1 sans toucher aux données existantes', async () => {
+    const { MIGRATIONS } = await import('@infrastructure/sqlite/migrator')
+    const db = openDatabase(':memory:')
+    migrate(db, MIGRATIONS.slice(0, 1)) // base telle que la Phase 7 la laissait
+    db.exec("INSERT INTO candidate (id, name) VALUES ('c1', 'SARL Alpha')")
+    expect(db.pragma('user_version', { simple: true })).toBe(1)
+
+    expect(migrate(db)).toBe(MIGRATIONS.length)
+
+    expect(db.prepare('SELECT name FROM candidate').all()).toEqual([{ name: 'SARL Alpha' }])
+    expect(
+      db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE name = 'attachment'").get()
+    ).toEqual({ n: 1 })
+  })
+
+  it('les types d’objets de la base sont exactement ceux du domaine', async () => {
+    const { ATTACHMENT_OWNER_KINDS } = await import('@domain/attachment')
+    const db = createMigratedDatabase()
+    const accepts = (kind: string): boolean => {
+      try {
+        db.prepare(
+          "INSERT INTO attachment (id, owner_kind, owner_id, name, mime_type, size, added_on) VALUES (lower(hex(randomblob(4))), ?, 'x', 'a.pdf', 'application/pdf', 1, '2026-01-01')"
+        ).run(kind)
+        return true
+      } catch {
+        return false
+      }
+    }
+    for (const kind of ATTACHMENT_OWNER_KINDS) expect(accepts(kind), kind).toBe(true)
+    expect(accepts('INCONNU')).toBe(false)
+  })
+})

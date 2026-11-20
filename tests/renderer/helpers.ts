@@ -61,7 +61,11 @@ export function installApiMock(): ApiMock {
     removeLastContractEvent: vi.fn<PrmpApi['removeLastContractEvent']>(),
     listContractableProcedures: vi
       .fn<PrmpApi['listContractableProcedures']>()
-      .mockResolvedValue(ok([]))
+      .mockResolvedValue(ok([])),
+    listAttachments: vi.fn<PrmpApi['listAttachments']>().mockResolvedValue(ok([])),
+    addAttachment: vi.fn<PrmpApi['addAttachment']>(),
+    removeAttachment: vi.fn<PrmpApi['removeAttachment']>().mockResolvedValue(ok(null)),
+    exportAttachment: vi.fn<PrmpApi['exportAttachment']>().mockResolvedValue(ok({ saved: true }))
   }
   Object.defineProperty(window, 'api', { value: api, configurable: true, writable: true })
   return api

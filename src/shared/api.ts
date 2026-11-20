@@ -1,7 +1,10 @@
 import type { z } from 'zod'
 import type {
+  addAttachmentInputSchema,
   addBidInputSchema,
   addContractEventInputSchema,
+  attachmentIdInputSchema,
+  attachmentOwnerInputSchema,
   appInfoSchema,
   candidateIdInputSchema,
   contractIdInputSchema,
@@ -47,6 +50,9 @@ export type AddBidInputDto = z.infer<typeof addBidInputSchema>
 export type UpdateBidInputDto = z.infer<typeof updateBidInputSchema>
 export type RemoveBidInputDto = z.infer<typeof removeBidInputSchema>
 export type SetAwardInputDto = z.infer<typeof setAwardInputSchema>
+export type AttachmentOwnerInputDto = z.infer<typeof attachmentOwnerInputSchema>
+export type AddAttachmentInputDto = z.infer<typeof addAttachmentInputSchema>
+export type AttachmentIdInputDto = z.infer<typeof attachmentIdInputSchema>
 export type ContractIdInputDto = z.infer<typeof contractIdInputSchema>
 export type CreateContractInputDto = z.infer<typeof createContractInputSchema>
 export type UpdateContractInputDto = z.infer<typeof updateContractInputSchema>
@@ -172,6 +178,23 @@ export interface ProcedureDetailDto extends ProcedureSummaryDto {
   readonly canCreateContract: boolean
 }
 
+/** Document joint (le contenu reste dans le processus principal, chiffré). */
+export interface AttachmentDto {
+  readonly id: string
+  readonly ownerKind: string
+  readonly ownerId: string
+  readonly name: string
+  readonly mimeType: string
+  readonly size: number
+  readonly addedOn: string
+  readonly note: string | null
+}
+
+/** Résultat de l'enregistrement d'une copie : `saved` = faux si l'utilisateur a fermé la fenêtre sans choisir. */
+export interface ExportResultDto {
+  readonly saved: boolean
+}
+
 /** Résumé d'un contrat (liste). Montants en Ariary entiers. */
 export interface ContractSummaryDto {
   readonly id: string
@@ -287,4 +310,8 @@ export interface PrmpApi {
   addContractEvent(input: AddContractEventInputDto): Promise<ApiResult<ContractDetailDto>>
   removeLastContractEvent(input: ContractIdInputDto): Promise<ApiResult<ContractDetailDto>>
   listContractableProcedures(): Promise<ApiResult<readonly ContractableProcedureDto[]>>
+  listAttachments(input: AttachmentOwnerInputDto): Promise<ApiResult<readonly AttachmentDto[]>>
+  addAttachment(input: AddAttachmentInputDto): Promise<ApiResult<AttachmentDto>>
+  removeAttachment(input: AttachmentIdInputDto): Promise<ApiResult<null>>
+  exportAttachment(input: AttachmentIdInputDto): Promise<ApiResult<ExportResultDto>>
 }

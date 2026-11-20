@@ -9,6 +9,7 @@ import {
 import { ariary } from '@domain/shared/ariary'
 import { DomainError } from '@domain/shared/errors'
 import type { IdGenerator } from '@domain/shared/ports'
+import { removeAttachmentsOf } from '../attachments/attachment-access'
 import { isAwarded } from '../procedures/views'
 import type { RegionSession } from '../region-session'
 import {
@@ -169,7 +170,8 @@ export class DeleteContractUseCase {
   constructor(private readonly session: RegionSession) {}
 
   execute(input: { readonly contractId: string }): void {
-    const { repositories } = this.session.requireWorkspace()
+    const workspace = this.session.requireWorkspace()
+    const { repositories } = workspace
     const contract = requireContract(repositories.contracts, input.contractId)
     if (contract.events.length > 0) {
       throw new DomainError(
@@ -178,6 +180,7 @@ export class DeleteContractUseCase {
       )
     }
     repositories.contracts.delete(contract.id)
+    removeAttachmentsOf(workspace, 'CONTRACT', contract.id)
   }
 }
 

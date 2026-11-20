@@ -1,4 +1,5 @@
 import type {
+  AttachmentRepository,
   CandidateRepository,
   ContractRepository,
   PpmRepository,
@@ -62,18 +63,29 @@ export interface OrganizationSettings {
   saveName(name: string): void
 }
 
+/** Contenu des documents joints d'UNE région : fichiers chiffrés, jamais lisibles en clair sur le disque. */
+export interface AttachmentFileStore {
+  write(attachmentId: string, bytes: Uint8Array): void
+  /** @throws DomainError `ATTACHMENT_UNREADABLE` si le fichier manque, est corrompu ou a été modifié */
+  read(attachmentId: string): Uint8Array
+  /** Sans erreur si le fichier n'existe pas. */
+  delete(attachmentId: string): void
+}
+
 /** Les dépôts d'UNE région. Un cas d'utilisation métier ne reçoit jamais que ceux de la région active. */
 export interface RegionRepositories {
   readonly ppms: PpmRepository
   readonly procedures: ProcedureRepository
   readonly candidates: CandidateRepository
   readonly contracts: ContractRepository
+  readonly attachments: AttachmentRepository
 }
 
 /** Base d'une région ouverte (déchiffrée). Doit être fermée explicitement. */
 export interface RegionWorkspace {
   readonly regionId: string
   readonly repositories: RegionRepositories
+  readonly files: AttachmentFileStore
   close(): void
 }
 

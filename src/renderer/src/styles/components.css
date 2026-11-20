@@ -112,6 +112,11 @@ select {
   border-radius: var(--radius-control);
 }
 
+input[type='file'] {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
 textarea {
   min-height: 5.5rem;
   line-height: 1.45;
@@ -543,4 +548,15 @@ tbody tr.is-next {
 
 td .visually-hidden + input {
   min-width: 9.5rem;
+}
+
+/* ---------- Formulaire intégré à un panneau (offres, exécution, documents) ---------- */
+.inline-form {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.inline-form > h3 {
+  margin-bottom: 0.25rem;
 }

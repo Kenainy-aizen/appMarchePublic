@@ -10,6 +10,14 @@ export function formatAriary(value: number): string {
   return `${formatAmount(value)} Ar`
 }
 
+/** 1536 -> « 1,5 Ko » ; 3 400 000 -> « 3,2 Mo » (taille d'un document). */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${String(bytes)} o`
+  const oneDecimal = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
+  if (bytes < 1024 * 1024) return `${oneDecimal.format(bytes / 1024)} Ko`
+  return `${oneDecimal.format(bytes / (1024 * 1024))} Mo`
+}
+
 /** « 2026-10-04 » -> « 04/10/2026 » ; une date absente s'affiche « — ». */
 export function formatDate(iso: string | null): string {
   if (iso === null) return '—'

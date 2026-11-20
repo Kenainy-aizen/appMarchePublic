@@ -2,6 +2,7 @@ import { type Candidate, createCandidate, normalizeNif } from '@domain/candidate
 import type { CandidateRepository } from '@domain/repositories'
 import { DomainError } from '@domain/shared/errors'
 import type { IdGenerator } from '@domain/shared/ports'
+import { removeAttachmentsOf } from '../attachments/attachment-access'
 import type { RegionRepositories } from '../ports'
 import type { RegionSession } from '../region-session'
 
@@ -109,7 +110,8 @@ export class DeleteCandidateUseCase {
   constructor(private readonly session: RegionSession) {}
 
   execute(input: { readonly candidateId: string }): void {
-    const { repositories } = this.session.requireWorkspace()
+    const workspace = this.session.requireWorkspace()
+    const { repositories } = workspace
     const candidate = requireCandidate(repositories.candidates, input.candidateId)
     const hasBids = bidCountOf(repositories, candidate.id) > 0
     const holdsContract = repositories.contracts
@@ -122,5 +124,6 @@ export class DeleteCandidateUseCase {
       )
     }
     repositories.candidates.delete(candidate.id)
+    removeAttachmentsOf(workspace, 'CANDIDATE', candidate.id)
   }
 }

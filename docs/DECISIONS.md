@@ -258,3 +258,17 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Situation d'exécution dérivée, jamais stockée.
 - Non modélisé : TEF, retrait de contrat, garanties, retenues, paiements, pénalités.
 - Aucune migration : les tables `contract` et `contract_event` de la migration 001 couvraient le besoin.
+
+## ADR-030 — Documents joints (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-11-13).
+- Rattachement : un document se joint à une **procédure**, un **contrat** ou un **candidat** (panneau « Documents joints » dans leur page). Pas de documents sur le plan de passation ni sur la région elle-même. Plusieurs documents par objet, avec une note facultative (500 caractères).
+- Types acceptés : **PDF, JPG/JPEG, PNG, Word (.docx), Excel (.xlsx)**, 20 Mo au maximum. Tout le reste est refusé (en particulier les exécutables et les archives).
+- Contrôles : extension autorisée, taille, **contenu vérifié contre l'extension** (signature du fichier : un exécutable renommé « .pdf » est refusé), nom d'origine nettoyé (chemin, caractères de contrôle et caractères interdits retirés, longueur limitée). Les fichiers refusés ne laissent rien sur le disque.
+- Chiffrement : chaque document est un fichier chiffré **AES-256-GCM**, avec une clé **dérivée par HKDF-SHA256 de la clé de données de la région** (jamais la même clé que la base). L'identifiant du document est authentifié : un fichier recopié sous un autre nom, modifié ou tronqué est refusé (`ATTACHMENT_UNREADABLE`). Sur le disque, le fichier est nommé par un UUID : ni le contenu ni le nom d'origine ne sont lisibles (le nom vit dans la base chiffrée).
+- Emplacement : `<dossier de données>/regions/<id région>.files/<id document>`, à côté de `<id région>.sqlite`. **Une sauvegarde doit contenir les deux** (voir Phase 12).
+- Base : migration 002 (table `attachment`, métadonnées seulement, sans clé étrangère vers l'objet). Les bases existantes sont mises à niveau automatiquement à l'ouverture (testé : les données existantes sont conservées).
+- Suppression : retirer un document efface ses métadonnées et son fichier ; supprimer une procédure, un contrat ou un candidat efface aussi ses documents (après la suppression réussie, jamais si elle est refusée). L'ordre à l'ajout est « fichier puis métadonnées » ; si l'enregistrement échoue, le fichier est supprimé.
+- Lecture : le contenu déchiffré ne quitte le processus principal que par « Enregistrer une copie » (boîte de dialogue du système, emplacement choisi par l'utilisateur) : le document en clair ne touche le disque qu'à cet endroit. Pas d'aperçu intégré ni d'ouverture directe (éviterait un fichier temporaire en clair).
+- Limite connue : « Enregistrer une copie » repose sur la boîte de dialogue native, que le test de bout en bout ne peut pas piloter ; le chemin est couvert par les tests des cas d'utilisation et du déchiffrement, pas par un clic réel.
+- Sélecteur de fichier : natif (le nom du bouton suit la langue du système).

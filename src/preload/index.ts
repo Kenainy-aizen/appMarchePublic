@@ -102,6 +102,18 @@ const api: PrmpApi = {
   listContractableProcedures: () =>
     ipcRenderer.invoke(IpcChannels.contractableProcedureList) as ReturnType<
       PrmpApi['listContractableProcedures']
+    >,
+  listAttachments: (input) =>
+    ipcRenderer.invoke(IpcChannels.attachmentList, input) as ReturnType<PrmpApi['listAttachments']>,
+  addAttachment: (input) =>
+    ipcRenderer.invoke(IpcChannels.attachmentAdd, input) as ReturnType<PrmpApi['addAttachment']>,
+  removeAttachment: (input) =>
+    ipcRenderer.invoke(IpcChannels.attachmentRemove, input) as ReturnType<
+      PrmpApi['removeAttachment']
+    >,
+  exportAttachment: (input) =>
+    ipcRenderer.invoke(IpcChannels.attachmentExport, input) as ReturnType<
+      PrmpApi['exportAttachment']
     >
 }
 

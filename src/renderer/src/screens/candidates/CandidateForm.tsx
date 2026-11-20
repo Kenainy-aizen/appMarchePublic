@@ -5,6 +5,7 @@ import { emptyToNull } from '../../format'
 import { Alert } from '../../ui/Alert'
 import { Icon } from '../../ui/Icon'
 import { PageHeader } from '../../ui/PageHeader'
+import { AttachmentsPanel } from '../AttachmentsPanel'
 
 interface Props {
   /** null = nouveau candidat. */
@@ -145,6 +146,8 @@ export function CandidateForm({ candidate, onSaved, onCancel }: Props): React.JS
           </button>
         </div>
       </form>
+
+      {candidate && <AttachmentsPanel ownerKind="CANDIDATE" ownerId={candidate.id} />}
     </>
   )
 }

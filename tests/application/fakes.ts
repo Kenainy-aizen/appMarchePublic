@@ -80,6 +80,7 @@ export class FakeStorage implements RegionStorage {
 export class FakeWorkspace implements RegionWorkspace {
   closed = false
   readonly repositories = {} as RegionWorkspace['repositories']
+  readonly files = {} as RegionWorkspace['files']
   constructor(readonly regionId: string) {}
   close(): void {
     this.closed = true
