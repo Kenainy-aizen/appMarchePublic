@@ -11,6 +11,7 @@ import {
 import { messageOf, unwrap } from '../../api-errors'
 import { emptyToNull, formatAriary, formatDate, parseSignedAmount } from '../../format'
 import { Alert } from '../../ui/Alert'
+import { AttachmentsPanel } from '../AttachmentsPanel'
 import { Icon } from '../../ui/Icon'
 import { PageHeader } from '../../ui/PageHeader'
 
@@ -354,6 +355,8 @@ export function ContractDetailScreen({ contractId, onEdit, onBack }: Props): Rea
           )
         )}
       </section>
+
+      <AttachmentsPanel ownerKind="CONTRACT" ownerId={detail.id} />
 
       <div className="danger-zone">
         {confirmDelete ? (

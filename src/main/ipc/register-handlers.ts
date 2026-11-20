@@ -16,13 +16,18 @@ import {
   saveOrganizationInputSchema
 } from '@shared/ipc-schemas'
 import { type CandidateUseCases, registerCandidateHandlers } from './register-candidate-handlers'
+import {
+  type AttachmentUseCases,
+  registerAttachmentHandlers,
+  type SaveCopy
+} from './register-attachment-handlers'
 import { type ContractUseCases, registerContractHandlers } from './register-contract-handlers'
 import { type PpmUseCases, registerPpmHandlers } from './register-ppm-handlers'
 import { type ProcedureUseCases, registerProcedureHandlers } from './register-procedure-handlers'
 import { parseInput, runSafely } from './safe-handler'
 
 export interface UseCases
-  extends PpmUseCases, ProcedureUseCases, CandidateUseCases, ContractUseCases {
+  extends PpmUseCases, ProcedureUseCases, CandidateUseCases, ContractUseCases, AttachmentUseCases {
   readonly getAppInfo: GetAppInfoUseCase
   readonly listRegions: ListRegionsUseCase
   readonly createRegion: CreateRegionUseCase
@@ -33,7 +38,7 @@ export interface UseCases
 }
 
 /** Enregistre les handlers IPC. Entrées validées par Zod ; sorties toujours sous forme d'`ApiResult`. */
-export function registerIpcHandlers(useCases: UseCases): void {
+export function registerIpcHandlers(useCases: UseCases, saveCopy: SaveCopy): void {
   ipcMain.handle(IpcChannels.appGetInfo, () => appInfoSchema.parse(useCases.getAppInfo.execute()))
 
   ipcMain.handle(IpcChannels.regionsOverview, () => runSafely(() => useCases.listRegions.execute()))
@@ -67,4 +72,5 @@ export function registerIpcHandlers(useCases: UseCases): void {
   registerProcedureHandlers(useCases)
   registerCandidateHandlers(useCases)
   registerContractHandlers(useCases)
+  registerAttachmentHandlers(useCases, saveCopy)
 }

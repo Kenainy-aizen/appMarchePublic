@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
@@ -729,6 +729,85 @@ try {
   await waitUntil(pageHas('Contrat M-001/2026'), 'marché ouvert depuis la procédure')
   check('interface : le marché s’ouvre depuis la page de la procédure', true)
 
+  // 2f. Documents joints, pilotés par l'INTERFACE réelle (sélecteur de fichier piloté par DevTools)
+  const DOC_NAME = 'PV e2e secret.pdf'
+  const DOC_MARKER = 'CONFIDENTIEL-E2E-12345678'
+  const regionFilesDir = join(dataDir, 'regions', `${r1.value.region.id}.files`)
+  const filesOnDisk = () => (existsSync(regionFilesDir) ? readdirSync(regionFilesDir) : [])
+  const goodPdf = join(outputDir, DOC_NAME)
+  writeFileSync(goodPdf, `%PDF-1.7\n${DOC_MARKER}\n`)
+  const fakePdf = join(outputDir, 'faux.pdf')
+  writeFileSync(fakePdf, Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]))
+  const badType = join(outputDir, 'script.exe')
+  writeFileSync(badType, 'MZ programme')
+
+  const attachFile = async (path) => {
+    const { root } = await send('DOM.getDocument', { depth: -1 })
+    const { nodeId } = await send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: '#attachment-file-CONTRACT'
+    })
+    await send('DOM.setFileInputFiles', { files: [path], nodeId })
+  }
+  const submitAttachment = async () => {
+    await waitUntil(
+      "[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Joindre le document' && !b.disabled)",
+      'bouton « Joindre le document » actif'
+    )
+    return clickButton('Joindre le document')
+  }
+
+  await waitUntil(pageHas('Aucun document joint.'), 'panneau des documents du contrat')
+  check('interface : le contrat n’a encore aucun document joint', true)
+  await attachFile(goodPdf)
+  await setField('#attachment-note-CONTRACT', 'Contrat signé en deux exemplaires')
+  check('clic « Joindre le document »', await submitAttachment())
+  await waitUntil(pageHas(DOC_NAME), 'document affiché')
+  check(
+    'interface : document joint, avec son type, sa note et sa taille',
+    (await evaluate(pageHas('Contrat signé en deux exemplaires'))) &&
+      (await evaluate(pageHas('PDF')))
+  )
+
+  check(
+    'disque : un seul fichier chiffré, nommé par un identifiant (pas par le nom d’origine)',
+    filesOnDisk().length === 1 &&
+      !filesOnDisk()[0].includes('PV') &&
+      /^[0-9a-f-]{36}$/.test(filesOnDisk()[0]),
+    filesOnDisk().join(',')
+  )
+  const encryptedBytes = readFileSync(join(regionFilesDir, filesOnDisk()[0]))
+  check(
+    'disque : le contenu du document n’est pas lisible',
+    !encryptedBytes.includes(DOC_MARKER) && !encryptedBytes.includes('%PDF')
+  )
+
+  await attachFile(fakePdf)
+  check('tentative : exécutable renommé en .pdf', await submitAttachment())
+  await waitUntil(pageHas('ne correspond pas à son type'), 'refus du faux PDF')
+  check('interface : un exécutable renommé en .pdf est refusé avec le motif', true)
+  await attachFile(badType)
+  check('tentative : fichier .exe', await submitAttachment())
+  await waitUntil(pageHas('n’est pas accepté'), 'refus du type de fichier')
+  check('interface : un type de fichier non accepté est refusé avec le motif', true)
+  check('disque : les fichiers refusés n’ont rien laissé', filesOnDisk().length === 1)
+
+  const shotDocs = await send('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: true
+  })
+  writeFileSync(join(outputDir, '7-documents.png'), Buffer.from(shotDocs.data, 'base64'))
+
+  check('clic « Retirer » le document', await clickByLabel('Retirer le document ' + DOC_NAME))
+  check('confirmation du retrait', await clickByText('Confirmer le retrait'))
+  await waitUntil(pageHas('Aucun document joint.'), 'document retiré')
+  check('disque : retirer le document efface son fichier', filesOnDisk().length === 0)
+
+  await attachFile(goodPdf)
+  await setField('#attachment-note-CONTRACT', 'Contrat signé en deux exemplaires')
+  check('document joint à nouveau', await submitAttachment())
+  await waitUntil(pageHas(DOC_NAME), 'document rejoint')
+
   // Même parcours côté API (la session de la région 1 est ouverte par l'interface)
   const plans = await evaluate('window.api.listPpms()')
   check(
@@ -922,6 +1001,39 @@ try {
     delHolder.ok ? 'SUPPRIMÉ !' : delHolder.error.code
   )
 
+  const docs = await evaluate(
+    `window.api.listAttachments({ownerKind:'CONTRACT',ownerId:${JSON.stringify(contractId)}})`
+  )
+  check(
+    'API : un document joint au contrat',
+    docs.ok &&
+      docs.value.length === 1 &&
+      docs.value[0].name === DOC_NAME &&
+      docs.value[0].mimeType === 'application/pdf',
+    JSON.stringify(docs.ok ? docs.value : docs.error)
+  )
+  const hugeFile = await evaluate(
+    `window.api.addAttachment({ownerKind:'CONTRACT',ownerId:${JSON.stringify(contractId)},fileName:'enorme.pdf',bytes:new Uint8Array(21*1024*1024),note:null})`
+  )
+  check(
+    'API : un fichier de plus de 20 Mo est rejeté à la frontière',
+    !hugeFile.ok && hugeFile.error.code === 'INVALID_REQUEST',
+    hugeFile.ok ? 'ACCEPTÉ !' : hugeFile.error.code
+  )
+  const unknownOwner = await evaluate(
+    `window.api.addAttachment({ownerKind:'CONTRACT',ownerId:'inexistant',fileName:'a.pdf',bytes:new Uint8Array([0x25,0x50,0x44,0x46,0x2d]),note:null})`
+  )
+  check(
+    'API : on ne peut pas joindre un document à un objet inexistant',
+    !unknownOwner.ok && unknownOwner.error.code === 'OWNER_NOT_FOUND',
+    unknownOwner.ok ? 'ACCEPTÉ !' : unknownOwner.error.code
+  )
+  const badOwnerKind = await evaluate(`window.api.listAttachments({ownerKind:'PPM',ownerId:'x'})`)
+  check(
+    'API : un type d’objet inconnu est rejeté à la frontière',
+    !badOwnerKind.ok && badOwnerKind.error.code === 'INVALID_REQUEST'
+  )
+
   // Isolation : la région 2 ne voit rien du plan de la région 1
   const toRegion2 = await evaluate(
     `window.api.openRegion({regionId:${JSON.stringify(r2.value.region.id)},password:${JSON.stringify(P2)}})`
@@ -935,6 +1047,14 @@ try {
   check('région 2 : aucun candidat visible', candsOf2.ok && candsOf2.value.length === 0)
   const contractsOf2 = await evaluate('window.api.listContracts()')
   check('région 2 : aucun contrat visible', contractsOf2.ok && contractsOf2.value.length === 0)
+  const docsOf2 = await evaluate(
+    `window.api.listAttachments({ownerKind:'CONTRACT',ownerId:${JSON.stringify(contractId)}})`
+  )
+  check(
+    'région 2 : les documents de la région 1 sont inaccessibles',
+    !docsOf2.ok && docsOf2.error.code === 'OWNER_NOT_FOUND',
+    docsOf2.ok ? 'VISIBLES !' : docsOf2.error.code
+  )
   const foreignContract = await evaluate(
     `window.api.getContract({contractId:${JSON.stringify(contractId)}})`
   )
@@ -1039,6 +1159,17 @@ try {
     )
   })
   check('aucun texte du plan (objet, service) ni schéma lisible dans les bases', !readableAnywhere)
+  const everyDocument = files
+    .filter((f) => f.endsWith('.files'))
+    .flatMap((dir) =>
+      readdirSync(join(dataDir, dir)).map((f) => readFileSync(join(dataDir, dir, f)))
+    )
+  check(
+    'tous les documents joints sont chiffrés sur le disque (ni contenu ni nom lisibles, aussi dans les bases)',
+    everyDocument.length === 1 &&
+      everyDocument.every((bytes) => !bytes.includes(DOC_MARKER) && !bytes.includes('%PDF')) &&
+      !dbFiles.some((f) => readFileSync(join(dataDir, f)).includes('PV e2e secret'))
+  )
   const header = readFileSync(join(dataDir, dbFiles[0])).subarray(0, 15).toString('latin1')
   check('bases chiffrées (pas d’en-tête SQLite lisible)', header !== 'SQLite format 3')
 

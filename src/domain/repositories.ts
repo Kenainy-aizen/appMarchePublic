@@ -1,3 +1,4 @@
+import type { Attachment, AttachmentOwnerKind } from './attachment'
 import type { Candidate } from './candidate'
 import type { Contract } from './contract'
 import type { Ppm } from './ppm'
@@ -36,4 +37,15 @@ export interface ContractRepository {
   findById(id: string): Contract | null
   list(): readonly Contract[]
   delete(id: string): void
+}
+
+/** Métadonnées des documents joints (le contenu est dans le magasin de fichiers chiffrés). */
+export interface AttachmentRepository {
+  save(attachment: Attachment): void
+  findById(id: string): Attachment | null
+  /** Du plus récent au plus ancien. */
+  listByOwner(ownerKind: AttachmentOwnerKind, ownerId: string): readonly Attachment[]
+  delete(id: string): void
+  /** Supprime les métadonnées de tous les documents d'un objet et renvoie leurs identifiants. */
+  deleteByOwner(ownerKind: AttachmentOwnerKind, ownerId: string): readonly string[]
 }

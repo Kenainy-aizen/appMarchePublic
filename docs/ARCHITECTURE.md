@@ -333,3 +333,43 @@ mot de passe -> scrypt -> clé qui déchiffre l'enveloppe -> clé de données (D
 - Contrôle par mutation : 10 régressions volontaires (succession des événements, dates, avenant sous zéro, titulaire différent de l'attributaire, second marché, suppression d'un contrat démarré, gel de l'en-tête dans le domaine et dans l'interface, bouton « Créer le marché » trop permissif) sont toutes détectées.
 - Marché, événements et situation survivent à un redémarrage ; l'annulation du dernier événement (clôture comprise) est enregistrée en base ; les contrats d'une région sont invisibles depuis une autre.
 - Test de bout en bout : 144 vérifications, dont le parcours entier par de vrais clics (créer le marché depuis la procédure, démarrage, avenant, refus d'une date avant la signature, réceptions, clôture, annulation de la clôture, retour vers la procédure) et l'absence de toute référence de contrat lisible dans les fichiers chiffrés.
+
+## 15. Phase 8 — Documents joints
+
+### Fichiers
+
+    src/domain/attachment.ts                          types acceptés, taille, nom nettoyé, signature du contenu
+    src/domain/repositories.ts                        + AttachmentRepository
+    src/application/ports.ts                          + AttachmentFileStore ; RegionWorkspace.files ; RegionRepositories.attachments
+    src/application/attachments/                      liste, ajout, retrait, relecture ; attachment-access.ts (objet existant, nettoyage)
+    src/infrastructure/crypto/file-encryption.ts      HKDF + AES-256-GCM (format : version | IV | étiquette | données)
+    src/infrastructure/attachments/encrypted-file-store.ts   un fichier chiffré par document, nommé par UUID
+    src/infrastructure/sqlite/migrations/002-attachments.ts  table `attachment`
+    src/infrastructure/sqlite/repositories/attachment-repository.ts
+    src/main/ipc/register-attachment-handlers.ts      4 canaux ; src/main/save-copy.ts (boîte de dialogue « enregistrer »)
+    src/shared/attachment-options.ts                  types, extensions et taille (un test les compare au domaine)
+    src/renderer/src/screens/AttachmentsPanel.tsx     panneau réutilisé par procédure, contrat et candidat
+
+### Canaux IPC (tous exigent une région ouverte, sinon `NO_ACTIVE_REGION`)
+
+| Canal             | Entrée                                     | Résultat    |
+| ----------------- | ------------------------------------------ | ----------- |
+| attachment:list   | type d'objet, identifiant                  | documents   |
+| attachment:add    | objet, nom du fichier, octets, note        | document    |
+| attachment:remove | `attachmentId`                             | null        |
+| attachment:export | `attachmentId` (boîte de dialogue système) | `{ saved }` |
+
+La taille (20 Mo) est bornée dès le schéma Zod, avant tout traitement du contenu.
+
+### Où vit chaque règle
+
+- Domaine : types, taille, nom, signature du contenu, note.
+- Application : objet existant, ordre fichier puis métadonnées avec nettoyage en cas d'échec, suppression en cascade avec l'objet.
+- Infrastructure : chiffrement, identifiants sûrs (aucun chemin possible), emplacement.
+- Interface : sélecteur limité aux types acceptés, contrôle de taille avant envoi (confort ; le domaine reste l'autorité).
+
+### Garanties vérifiées par des tests
+
+- Contrôle par mutation : 12 régressions volontaires (type non autorisé, fichier trop gros, signature non vérifiée, chemin dans le nom, objet non vérifié, fichier orphelin non nettoyé, procédure supprimée sans ses documents, identifiant non lié au fichier, identifiant non contrôlé, document écrit en clair, région supprimée sans ses documents, contrôle de taille de l'interface) sont toutes détectées.
+- Sur le disque : un seul fichier par document, nommé par un identifiant, ni contenu ni nom d'origine lisibles (fichiers et bases) ; un fichier modifié, vidé, recopié sous un autre nom ou ouvert avec la clé d'une autre région est refusé ; les documents d'une région sont inaccessibles depuis une autre.
+- Test de bout en bout : 164 vérifications, dont la jointure d'un document par le vrai sélecteur de fichier, le refus d'un exécutable renommé en .pdf et d'un fichier .exe, le retrait (fichier effacé du disque) et l'absence de tout contenu lisible dans les fichiers de données.

@@ -1,6 +1,7 @@
 import type { SqliteDatabase } from './database'
 import { DatabaseTooNewError } from './errors'
 import { initialSchema } from './migrations/001-initial-schema'
+import { attachmentsSchema } from './migrations/002-attachments'
 
 export interface Migration {
   readonly version: number
@@ -9,7 +10,7 @@ export interface Migration {
 }
 
 /** Liste ordonnée des migrations. On n'y modifie jamais une entrée existante : on en ajoute une. */
-export const MIGRATIONS: readonly Migration[] = [initialSchema]
+export const MIGRATIONS: readonly Migration[] = [initialSchema, attachmentsSchema]
 
 function readVersion(db: SqliteDatabase): number {
   return db.pragma('user_version', { simple: true }) as number

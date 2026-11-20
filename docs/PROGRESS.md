@@ -1,11 +1,11 @@
 # PROGRESS — Suivi des marchés publics (PRMP, version locale)
 
 > Mémoire du projet. À lire EN PREMIER à chaque reprise de conversation.
-> Dernière mise à jour : 2026-11-01 (Phase 7 livrée, en attente de validation)
+> Dernière mise à jour : 2026-11-13 (Phase 8 livrée, en attente de validation)
 
 ## Phase courante
 
-**Phase 7 — Contrats et exécution** (code terminé, EN ATTENTE de validation par l'utilisateur)
+**Phase 8 — Documents joints** (code terminé, EN ATTENTE de validation par l'utilisateur)
 
 ## Contexte en bref
 
@@ -26,8 +26,8 @@ Développement sous Linux ; cible Windows 10.
 | 4b  | Nom de la PRMP au premier lancement + refonte de l'interface          | TERMINÉ                  |
 | 5   | Procédures de passation et suivi des étapes                           | TERMINÉ                  |
 | 6   | Candidats / soumissionnaires et offres                                | TERMINÉ                  |
-| 7   | Contrats et exécution (OS, réceptions, avenants, clôture)             | EN ATTENTE DE VALIDATION |
-| 8   | Documents joints                                                      | À FAIRE                  |
+| 7   | Contrats et exécution (OS, réceptions, avenants, clôture)             | TERMINÉ                  |
+| 8   | Documents joints                                                      | EN ATTENTE DE VALIDATION |
 | 9   | Alertes d'échéances                                                   | À FAIRE                  |
 | 10  | Tableau de bord                                                       | À FAIRE                  |
 | 11  | États imprimables (PDF / Excel)                                       | À FAIRE                  |
@@ -68,9 +68,13 @@ Développement sous Linux ; cible Windows 10.
 - 2026-11-01 — Phase 7 : contrats (marché, convention, achat direct) et leur exécution ; le marché naît d'une procédure attribuée ; événements dans un ordre contrôlé ; annulation du dernier événement (ADR-029). Vérifié sous Linux : types, lint, 460 tests, build, e2e 144/144 (parcours entier par de vrais clics), 10 mutations toutes détectées. Non vérifié : Windows 10.
 - 2026-11-01 — INCIDENT (deuxième fois) : l'environnement de travail a été réinitialisé pendant la Phase 7. Grâce à la sauvegarde périodique mise en place après le premier incident, seule l'extension du test de bout en bout (parcours des contrats) a dû être refaite ; tout a été revérifié (460 tests, e2e 144/144, 10 mutations). Mesure renforcée : sauvegarde après chaque étape significative.
 - 2026-11-01 — Constat de méthode : une première série de mutations avait une mutation non appliquée (motif introuvable après reformatage) et l'avait laissé passer sans le dire ; elle a été refaite et vérifiée une à une (10 sur 10 appliquées et détectées).
+- 2026-11-13 — Phase 7 considérée comme acceptée (message « Continuer », sans retour d'essai) : si les essais manuels révèlent un défaut, il sera corrigé avant la suite.
+- 2026-11-13 — Phase 8 : documents joints à une procédure, un contrat ou un candidat, chiffrés sur le disque, avec contrôle du type, de la taille et du contenu (ADR-030). Vérifié sous Linux : types, lint, 564 tests, build, e2e 164/164 (vrai sélecteur de fichier, fichiers lus sur le disque), 12 mutations toutes détectées. Défaut trouvé sur la capture et corrigé : séparateur manquant au-dessus du formulaire d'envoi. Non vérifié : Windows 10 ; la boîte de dialogue « Enregistrer une copie » n'est pas pilotable en test automatique.
+- 2026-11-13 — Méthode : la sortie de ma première série de mutations était illisible (caractères binaires dans les noms de test, grep muet) et un motif était introuvable ; 5 mutations sur 12 ont donc été refaites et vérifiées une à une avant de conclure.
 
 ## Décisions en attente
 
+- ADR-030 : documents joints (objets concernés, types acceptés, 20 Mo, chiffrement, pas d'aperçu, copie par boîte de dialogue) ; à confirmer avec la PRMP, notamment les types de fichiers et la taille maximale.
 - ADR-029 : règles des contrats et de leur exécution (succession des événements, dates, avenants sans plafond, annulation du dernier événement, gel de l'en-tête, suppression) ; à confirmer avec la PRMP, notamment un éventuel plafond d'avenants.
 - ADR-028 : règles des candidats et des offres (NIF unique, suppression refusée si offre ou contrat, offre retenue unique, attribution exigeant une offre retenue, verrou après attribution) ; à confirmer avec la PRMP.
 - ADR-027 : règles de succession des étapes d'une procédure (ordre, validation, réouverture, verrouillage, mode, référence unique, suppression) ; à confirmer avec la PRMP, c'est la question la plus importante avant la Phase 6.
@@ -81,14 +85,14 @@ Développement sous Linux ; cible Windows 10.
 
 ## Prochaines actions
 
-1. L'utilisateur intègre le zip de la Phase 7 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à la main : ouvrir une procédure dont l'attribution est validée > « Créer le marché » (objet, montant et titulaire préremplis) ; saisir la date de signature ; enregistrer le démarrage, un avenant, la réception provisoire, la réception définitive, la clôture ; essayer une date avant la signature ; annuler le dernier événement ; créer un achat direct depuis « Contrats » ; vérifier qu'une procédure qui a un marché ne peut plus être supprimée.
-2. Faire confirmer par la PRMP : règles des contrats (ADR-029), des offres (ADR-028), des étapes (ADR-027), du plan (ADR-023).
-3. Valider la Phase 7.
-4. Démarrer la Phase 8 : documents joints (scans de PV, avis, contrats), avec stockage des fichiers dans le dossier de la région, chiffrés comme la base : question préalable, à quels objets les rattacher (procédure, contrat, candidat) et quels formats accepter ?
+1. L'utilisateur intègre le zip de la Phase 8 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à la main : ouvrir un contrat > « Documents joints » > choisir un PDF réel (un PV, un scan) > « Joindre le document » ; essayer un fichier .exe et un PDF endommagé ; « Copie » > enregistrer une copie et l'ouvrir ; retirer le document ; joindre un document à une procédure et à un candidat (en modification) ; vérifier dans le dossier de données (`regions/<id>.files`) que les fichiers ne sont pas lisibles.
+2. Faire confirmer par la PRMP : objets concernés, types de fichiers et taille maximale (ADR-030), puis les règles des phases 4 à 7 (ADR-023, 027, 028, 029).
+3. Valider la Phase 8.
+4. Démarrer la Phase 9 : alertes d'échéances (dates prévues des étapes de procédure, dates prévisionnelles des lignes du plan, événements d'exécution à venir) affichées à l'ouverture de la région, sans connexion ni notification système. Question préalable : à partir de combien de jours à l'avance alerter, et quelles échéances comptent ?
 
 ## Points à reprendre dans les phases suivantes
 
-- Phase 8 : les fichiers joints doivent être chiffrés comme la base (une clé par région) et sauvegardés avec elle ; prévoir la migration 002 (table des documents).
+- Phase 12 : la sauvegarde d'une région doit contenir `<id>.sqlite` ET le dossier `<id>.files` ensemble, avec `regions.json` et `settings.json` ; la restauration doit refuser un jeu incomplet.
 - Phase 9 : les alertes d'échéances s'appuieront sur les dates prévues des étapes (déjà saisissables) et sur les dates prévisionnelles des lignes du plan.
 - Accueil : afficher le nombre de procédures en cours (non fait en Phase 5, pour garder la phase ciblée).
 - Phase 12 : permettre de DÉFINIR un nouveau mot de passe avec la clé de récupération (écran « Mot de passe oublié » + cas d'utilisation) ; changer le mot de passe (ancien requis) ; RÉGÉNÉRER la clé de récupération région ouverte ; renommer une région ; sauvegarde et restauration : la sauvegarde doit inclure `regions.json` ET les fichiers `regions/*.sqlite` (sans le registre, les bases sont inutilisables).

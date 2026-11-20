@@ -2,6 +2,17 @@
 
 ## [Non publié]
 
+### Phase 8 — Documents joints (2026-11-13)
+
+- Domaine : documents joints à une procédure, un contrat ou un candidat ; types acceptés (PDF, JPG, PNG, DOCX, XLSX), 20 Mo, nom nettoyé, contenu vérifié contre l'extension (ADR-030).
+- Sécurité : chaque document est un fichier chiffré AES-256-GCM (clé dérivée de la clé de données de la région), nommé par un identifiant ; modification, troncature et recopie sous un autre nom détectées.
+- Base : migration 002 (table `attachment`), appliquée automatiquement aux bases existantes.
+- Application : 4 cas d'utilisation ; suppression en cascade des documents avec leur objet ; nettoyage du fichier si l'enregistrement échoue.
+- IPC : 4 canaux `attachment:*` ; « Enregistrer une copie » par la boîte de dialogue du système.
+- Interface : panneau « Documents joints » dans la page d'une procédure, d'un contrat et d'un candidat (en modification) ; séparateur des formulaires intégrés aux panneaux.
+- Tests : 564 tests ; e2e 164 vérifications ; 12 mutations détectées. Capture : docs/captures/13.
+- Une région se compose désormais de deux éléments à sauvegarder ensemble : `<id>.sqlite` et le dossier `<id>.files`.
+
 ### Phase 7 — Contrats et exécution (2026-11-01)
 
 - Domaine : situation d'exécution dérivée, succession des événements (ordres de service, réceptions, avenants, clôture), contrôle des dates et du montant, annulation du dernier événement, gel du montant et de la signature (ADR-029).

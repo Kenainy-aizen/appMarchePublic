@@ -8,6 +8,7 @@ import { Alert } from '../../ui/Alert'
 import { Icon } from '../../ui/Icon'
 import { PageHeader } from '../../ui/PageHeader'
 import { ProgressBadge } from '../../ui/ProgressBadge'
+import { AttachmentsPanel } from '../AttachmentsPanel'
 import { BidsPanel } from './BidsPanel'
 
 interface Props {
@@ -372,6 +373,8 @@ export function ProcedureDetailScreen({
           )}
         </section>
       )}
+
+      <AttachmentsPanel ownerKind="PROCEDURE" ownerId={detail.id} />
 
       <div className="danger-zone">
         {confirmDelete ? (

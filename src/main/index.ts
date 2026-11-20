@@ -7,6 +7,12 @@ import { CloseRegionUseCase, GetSessionUseCase } from '@application/regions/clos
 import { CreateRegionUseCase } from '@application/regions/create-region'
 import { ListRegionsUseCase } from '@application/regions/list-regions'
 import {
+  AddAttachmentUseCase,
+  ListAttachmentsUseCase,
+  ReadAttachmentUseCase,
+  RemoveAttachmentUseCase
+} from '@application/attachments/attachment-use-cases'
+import {
   AddContractEventUseCase,
   CreateContractUseCase,
   DeleteContractUseCase,
@@ -54,6 +60,7 @@ import { JsonRegionRegistry } from '@infrastructure/json-region-registry'
 import { SqliteRegionStorage } from '@infrastructure/sqlite/region-storage'
 import { SystemClock, UuidGenerator } from '@infrastructure/system-ports'
 import { registerIpcHandlers } from './ipc/register-handlers'
+import { saveCopyWithDialog } from './save-copy'
 import { blockOutgoingNetwork } from './security'
 import { createMainWindow } from './window'
 
@@ -81,47 +88,54 @@ function bootstrap(): RegionSession {
   const ids = new UuidGenerator()
 
   blockOutgoingNetwork()
-  registerIpcHandlers({
-    getAppInfo: new GetAppInfoUseCase(new ElectronAppInfoProvider()),
-    listRegions: new ListRegionsUseCase(registry, settings),
-    saveOrganization: new SaveOrganizationUseCase(settings),
-    createRegion: new CreateRegionUseCase(registry, keys, storage, ids, clock, throttle),
-    openRegion: new OpenRegionUseCase(registry, keys, storage, session, throttle, clock),
-    closeRegion: new CloseRegionUseCase(session),
-    getSession: new GetSessionUseCase(session),
-    listPpms: new ListPpmsUseCase(session),
-    getPpm: new GetPpmUseCase(session),
-    createPpm: new CreatePpmUseCase(session, ids, clock),
-    savePpmLine: new SavePpmLineUseCase(session, ids),
-    removePpmLine: new RemovePpmLineUseCase(session),
-    recordPpmUpdate: new RecordPpmUpdateUseCase(session, clock),
-    deletePpm: new DeletePpmUseCase(session),
-    listPpmLines: new ListPpmLinesUseCase(session),
-    listProcedures: new ListProceduresUseCase(session),
-    getProcedure: new GetProcedureUseCase(session),
-    createProcedure: new CreateProcedureUseCase(session, ids, clock),
-    updateProcedure: new UpdateProcedureUseCase(session),
-    saveStepDates: new SaveStepDatesUseCase(session),
-    validateStep: new ValidateStepUseCase(session, clock),
-    reopenStep: new ReopenStepUseCase(session),
-    deleteProcedure: new DeleteProcedureUseCase(session),
-    listCandidates: new ListCandidatesUseCase(session),
-    createCandidate: new CreateCandidateUseCase(session, ids),
-    updateCandidate: new UpdateCandidateUseCase(session),
-    deleteCandidate: new DeleteCandidateUseCase(session),
-    addBid: new AddBidUseCase(session, ids),
-    updateBid: new UpdateBidUseCase(session),
-    removeBid: new RemoveBidUseCase(session),
-    setAward: new SetAwardUseCase(session),
-    listContracts: new ListContractsUseCase(session),
-    getContract: new GetContractUseCase(session),
-    createContract: new CreateContractUseCase(session, ids),
-    updateContract: new UpdateContractUseCase(session),
-    deleteContract: new DeleteContractUseCase(session),
-    addContractEvent: new AddContractEventUseCase(session, ids),
-    removeLastContractEvent: new RemoveLastContractEventUseCase(session),
-    listContractableProcedures: new ListContractableProceduresUseCase(session)
-  })
+  registerIpcHandlers(
+    {
+      getAppInfo: new GetAppInfoUseCase(new ElectronAppInfoProvider()),
+      listRegions: new ListRegionsUseCase(registry, settings),
+      saveOrganization: new SaveOrganizationUseCase(settings),
+      createRegion: new CreateRegionUseCase(registry, keys, storage, ids, clock, throttle),
+      openRegion: new OpenRegionUseCase(registry, keys, storage, session, throttle, clock),
+      closeRegion: new CloseRegionUseCase(session),
+      getSession: new GetSessionUseCase(session),
+      listPpms: new ListPpmsUseCase(session),
+      getPpm: new GetPpmUseCase(session),
+      createPpm: new CreatePpmUseCase(session, ids, clock),
+      savePpmLine: new SavePpmLineUseCase(session, ids),
+      removePpmLine: new RemovePpmLineUseCase(session),
+      recordPpmUpdate: new RecordPpmUpdateUseCase(session, clock),
+      deletePpm: new DeletePpmUseCase(session),
+      listPpmLines: new ListPpmLinesUseCase(session),
+      listProcedures: new ListProceduresUseCase(session),
+      getProcedure: new GetProcedureUseCase(session),
+      createProcedure: new CreateProcedureUseCase(session, ids, clock),
+      updateProcedure: new UpdateProcedureUseCase(session),
+      saveStepDates: new SaveStepDatesUseCase(session),
+      validateStep: new ValidateStepUseCase(session, clock),
+      reopenStep: new ReopenStepUseCase(session),
+      deleteProcedure: new DeleteProcedureUseCase(session),
+      listCandidates: new ListCandidatesUseCase(session),
+      createCandidate: new CreateCandidateUseCase(session, ids),
+      updateCandidate: new UpdateCandidateUseCase(session),
+      deleteCandidate: new DeleteCandidateUseCase(session),
+      addBid: new AddBidUseCase(session, ids),
+      updateBid: new UpdateBidUseCase(session),
+      removeBid: new RemoveBidUseCase(session),
+      setAward: new SetAwardUseCase(session),
+      listContracts: new ListContractsUseCase(session),
+      getContract: new GetContractUseCase(session),
+      createContract: new CreateContractUseCase(session, ids),
+      updateContract: new UpdateContractUseCase(session),
+      deleteContract: new DeleteContractUseCase(session),
+      addContractEvent: new AddContractEventUseCase(session, ids),
+      removeLastContractEvent: new RemoveLastContractEventUseCase(session),
+      listContractableProcedures: new ListContractableProceduresUseCase(session),
+      listAttachments: new ListAttachmentsUseCase(session),
+      addAttachment: new AddAttachmentUseCase(session, ids, clock),
+      removeAttachment: new RemoveAttachmentUseCase(session),
+      readAttachment: new ReadAttachmentUseCase(session)
+    },
+    saveCopyWithDialog
+  )
   createMainWindow()
   return session
 }

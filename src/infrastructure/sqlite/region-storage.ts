@@ -2,9 +2,12 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { RegionStorage, RegionWorkspace } from '@application/ports'
 import { DomainError } from '@domain/shared/errors'
+import { EncryptedFileStore } from '../attachments/encrypted-file-store'
+import { deriveFileKey } from '../crypto/file-encryption'
 import { openDatabase } from './database'
 import { DatabaseAccessError, DatabaseTooNewError } from './errors'
 import { migrate } from './migrator'
+import { SqliteAttachmentRepository } from './repositories/attachment-repository'
 import { SqliteCandidateRepository } from './repositories/candidate-repository'
 import { SqliteContractRepository } from './repositories/contract-repository'
 import { SqlitePpmRepository } from './repositories/ppm-repository'
@@ -12,7 +15,10 @@ import { SqliteProcedureRepository } from './repositories/procedure-repository'
 
 const REGION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
-/** Un fichier SQLite chiffré par région : <dossier>/<identifiant>.sqlite */
+/**
+ * Un fichier SQLite chiffré par région : <dossier>/<identifiant>.sqlite, et un dossier de documents joints
+ * chiffrés : <dossier>/<identifiant>.files/ (à sauvegarder ensemble).
+ */
 export class SqliteRegionStorage implements RegionStorage {
   constructor(private readonly directory: string) {}
 
@@ -43,15 +49,20 @@ export class SqliteRegionStorage implements RegionStorage {
       db.close()
       throw toDomainError(error)
     }
+    // Clé des documents : dérivée AVANT que l'appelant n'efface la clé de données ; effacée à la fermeture.
+    const fileKey = deriveFileKey(dataKey)
     return {
       regionId,
       repositories: {
         ppms: new SqlitePpmRepository(db),
         procedures: new SqliteProcedureRepository(db),
         candidates: new SqliteCandidateRepository(db),
-        contracts: new SqliteContractRepository(db)
+        contracts: new SqliteContractRepository(db),
+        attachments: new SqliteAttachmentRepository(db)
       },
+      files: new EncryptedFileStore(this.filesFor(regionId), fileKey),
       close: () => {
+        fileKey.fill(0)
         db.close()
       }
     }
@@ -62,12 +73,21 @@ export class SqliteRegionStorage implements RegionStorage {
     for (const path of [file, `${file}-journal`, `${file}-wal`, `${file}-shm`]) {
       rmSync(path, { force: true })
     }
+    rmSync(this.filesFor(regionId), { recursive: true, force: true })
+  }
+
+  private filesFor(regionId: string): string {
+    return join(this.directory, `${this.safeId(regionId)}.files`)
   }
 
   private fileFor(regionId: string): string {
-    // L'identifiant sert de nom de fichier : on refuse tout ce qui n'est pas un UUID (anti « ../ »).
+    return join(this.directory, `${this.safeId(regionId)}.sqlite`)
+  }
+
+  /** L'identifiant sert de nom de fichier : on refuse tout ce qui n'est pas un UUID (anti « ../ »). */
+  private safeId(regionId: string): string {
     if (!REGION_ID_PATTERN.test(regionId)) throw new Error('Identifiant de région invalide.')
-    return join(this.directory, `${regionId}.sqlite`)
+    return regionId
   }
 }
 

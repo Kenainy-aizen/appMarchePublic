@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { METHOD_CODES, NATURE_CODES } from './ppm-options'
+import { ATTACHMENT_OWNER_CODES, MAX_ATTACHMENT_BYTES } from './attachment-options'
 import { CONTRACT_EVENT_CODES, CONTRACT_KIND_CODES } from './contract-options'
 import { STEP_CODES } from './procedure-options'
 
@@ -145,3 +146,23 @@ export const addContractEventInputSchema = z.object({
     .nullable(),
   note: z.string().max(500).nullable()
 })
+
+// --- Documents joints ---
+export const attachmentOwnerInputSchema = z.object({
+  ownerKind: z.enum(ATTACHMENT_OWNER_CODES),
+  ownerId: idField
+})
+
+export const addAttachmentInputSchema = z.object({
+  ownerKind: z.enum(ATTACHMENT_OWNER_CODES),
+  ownerId: idField,
+  /** Nom d'origine du fichier ; nettoyé et vérifié par le domaine. */
+  fileName: z.string().min(1).max(255),
+  /** Contenu du fichier (taille bornée ici pour ne jamais traiter une charge démesurée). */
+  bytes: z.instanceof(Uint8Array).refine((bytes) => bytes.length <= MAX_ATTACHMENT_BYTES, {
+    message: 'Le fichier dépasse la taille maximale.'
+  }),
+  note: z.string().max(500).nullable()
+})
+
+export const attachmentIdInputSchema = z.object({ attachmentId: idField })
