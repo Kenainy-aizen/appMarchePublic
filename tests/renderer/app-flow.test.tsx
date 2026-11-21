@@ -10,12 +10,14 @@ afterEach(cleanup)
 
 const empty: RegionsOverviewDto = {
   organizationName: null,
+  alertHorizonDays: 15,
   regions: [],
   canCreate: true,
   suggestedName: 'Région 1'
 }
 const withOne: RegionsOverviewDto = {
   organizationName: 'PRMP de Fianarantsoa',
+  alertHorizonDays: 15,
   regions: [{ id: 'r1', name: 'Région 1' }],
   canCreate: true,
   suggestedName: 'Région 2'

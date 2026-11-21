@@ -2,6 +2,16 @@
 
 ## [Non publié]
 
+### Phase 9 — Alertes d'échéances (2026-11-21)
+
+- Domaine : calcul pur des échéances (étapes de procédure, lancements prévus du plan, marchés non démarrés), classées en retard / à venir (ADR-031) ; utilitaires de dates.
+- Réglage : délai d'alerte (7, 15, 30 ou 60 jours, 15 par défaut) dans les Paramètres, conservé avec le nom de la PRMP dans `settings.json` ; les anciens fichiers restent lisibles.
+- Application : 2 cas d'utilisation ; les alertes sont recalculées à chaque affichage, jamais stockées.
+- IPC : 2 canaux (`alert:list`, `settings:save-alert-horizon`).
+- Interface : entrée « Alertes » du menu avec pastille (rouge s'il y a un retard), résumé sur l'accueil, page des échéances avec ouverture directe de la procédure, du marché ou du plan concerné.
+- Tests : 649 tests ; e2e 183 vérifications ; 14 mutations détectées. Captures : docs/captures/14 et 15.
+- Aucune migration de base.
+
 ### Phase 8 — Documents joints (2026-11-13)
 
 - Domaine : documents joints à une procédure, un contrat ou un candidat ; types acceptés (PDF, JPG, PNG, DOCX, XLSX), 20 Mo, nom nettoyé, contenu vérifié contre l'extension (ADR-030).

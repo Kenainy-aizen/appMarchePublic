@@ -26,7 +26,7 @@ Pile : Electron + React + TypeScript (Vite) + SQLite chiffré (à partir de la P
 
 ## Où sont les données ?
 
-- Windows : `%APPDATA%\prmp-suivi-marches` (registre `regions.json`, réglages `settings.json` avec le nom de la PRMP, dossier `regions/` avec, pour chaque région, une base chiffrée `<id>.sqlite` et ses documents joints chiffrés dans `<id>.files/`).
+- Windows : `%APPDATA%\prmp-suivi-marches` (registre `regions.json`, réglages `settings.json` avec le nom de la PRMP et le délai d'alerte des échéances, dossier `regions/` avec, pour chaque région, une base chiffrée `<id>.sqlite` et ses documents joints chiffrés dans `<id>.files/`).
 - Linux (développement) : `~/.config/prmp-suivi-marches`.
 - Repartir de zéro en développement : supprimer ce dossier (les régions et leurs données seront perdues). Pour ne pas toucher aux vraies données : `PRMP_DATA_DIR=/chemin/jetable npm run dev`.
 - **Si vous avez créé des régions avec le premier zip de la Phase 3**, supprimez ce dossier avant de relancer : le format de clé des bases a changé (ADR-022) et elles ne s'ouvriraient plus.

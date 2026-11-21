@@ -10,8 +10,15 @@ type View =
   | { readonly kind: 'line'; readonly ppmId: string; readonly line: PpmLineDto | null }
 
 /** Module « Plan de passation » : liste des plans, détail d'un plan, formulaire d'une ligne. */
-export function PpmModule(): React.JSX.Element {
-  const [view, setView] = useState<View>({ kind: 'list' })
+interface Props {
+  /** Plan à ouvrir directement (lien venu d'une alerte). */
+  readonly initialPpmId?: string | null
+}
+
+export function PpmModule({ initialPpmId = null }: Props): React.JSX.Element {
+  const [view, setView] = useState<View>(
+    initialPpmId === null ? { kind: 'list' } : { kind: 'detail', ppmId: initialPpmId }
+  )
 
   if (view.kind === 'detail') {
     const { ppmId } = view

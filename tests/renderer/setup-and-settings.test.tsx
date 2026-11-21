@@ -124,6 +124,8 @@ describe('SettingsScreen', () => {
     const onSaved = vi.fn()
     render(
       <SettingsScreen
+        alertHorizonDays={15}
+        onAlertHorizonSaved={vi.fn()}
         organizationName="PRMP à corriger"
         appInfo={{ name: 'x', version: '1.2.3' }}
         onSaved={onSaved}
@@ -149,7 +151,15 @@ describe('SettingsScreen', () => {
       fail('REQUIRED_FIELD', 'Le champ « nom de la PRMP » est obligatoire.')
     )
     const onSaved = vi.fn()
-    render(<SettingsScreen organizationName="PRMP" appInfo={null} onSaved={onSaved} />)
+    render(
+      <SettingsScreen
+        alertHorizonDays={15}
+        onAlertHorizonSaved={vi.fn()}
+        organizationName="PRMP"
+        appInfo={null}
+        onSaved={onSaved}
+      />
+    )
 
     await user.clear(screen.getByLabelText('Nom de la PRMP'))
     await user.type(screen.getByLabelText('Nom de la PRMP'), ' ')

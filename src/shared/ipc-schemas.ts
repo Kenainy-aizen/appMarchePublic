@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { METHOD_CODES, NATURE_CODES } from './ppm-options'
+import { ALERT_HORIZON_CHOICES } from './alert-options'
 import { ATTACHMENT_OWNER_CODES, MAX_ATTACHMENT_BYTES } from './attachment-options'
 import { CONTRACT_EVENT_CODES, CONTRACT_KIND_CODES } from './contract-options'
 import { STEP_CODES } from './procedure-options'
@@ -166,3 +167,11 @@ export const addAttachmentInputSchema = z.object({
 })
 
 export const attachmentIdInputSchema = z.object({ attachmentId: idField })
+
+// --- Alertes d'échéances ---
+export const saveAlertHorizonInputSchema = z.object({
+  /** 7, 15, 30 ou 60 jours : toute autre valeur est refusée à la frontière. */
+  days: z.number().refine((days) => (ALERT_HORIZON_CHOICES as readonly number[]).includes(days), {
+    message: 'Délai d’alerte invalide.'
+  })
+})

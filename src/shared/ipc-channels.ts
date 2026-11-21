@@ -30,6 +30,8 @@ export const IpcChannels = {
   attachmentAdd: 'attachment:add',
   attachmentRemove: 'attachment:remove',
   attachmentExport: 'attachment:export',
+  alertList: 'alert:list',
+  settingsSaveAlertHorizon: 'settings:save-alert-horizon',
   procedureList: 'procedure:list',
   procedureGet: 'procedure:get',
   procedureCreate: 'procedure:create',

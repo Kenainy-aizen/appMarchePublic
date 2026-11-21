@@ -1100,6 +1100,153 @@ try {
     procsAgain.ok && procsAgain.value.length === 1 && procsAgain.value[0].validatedCount === 4
   )
 
+  // 2g. Alertes d'échéances. La région 1 est ouverte par l'API : on recharge la page, l'application retrouve la session.
+  const addDaysIso = (iso, days) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+  }
+  const base = await evaluate('window.api.listAlerts()')
+  check(
+    'API : aucune alerte tant qu’aucune date n’est prévue',
+    base.ok && base.value.items.length === 0 && base.value.horizonDays === 15,
+    JSON.stringify(base.ok ? base.value : base.error)
+  )
+  const TODAY = base.value.today
+  const api = (call) => evaluate(`window.api.${call}`)
+
+  const alertProc = await api(
+    `createProcedure({reference:'AOR-ALERTE/2026',object:'Procédure avec échéances',method:'AOR',ppmLineId:null,estimatedAmount:null})`
+  )
+  const planStep = (procedureId, step, plannedDate) =>
+    api(
+      `saveStepDates({procedureId:${JSON.stringify(procedureId)},step:'${step}',plannedDate:${JSON.stringify(plannedDate)},actualDate:null})`
+    )
+  await planStep(alertProc.value.id, 'OUVERTURE_PLIS', addDaysIso(TODAY, -6)) // en retard de 6 jours
+  await planStep(alertProc.value.id, 'EVALUATION', addDaysIso(TODAY, 4)) // dans 4 jours
+  await planStep(alertProc.value.id, 'PUBLICATION', addDaysIso(TODAY, 40)) // au-delà du délai de 15 jours
+  const lateLine = await api(
+    `savePpmLine({ppmId:${JSON.stringify(planId)},lineId:null,nature:'FOURNITURES',object:'Ligne à lancer',financing:null,accounts:[],plannedLaunchDate:${JSON.stringify(addDaysIso(TODAY, -2))},plannedBidOpeningDate:null,plannedAwardDate:null,beneficiaries:[{service:'SAF',amount:1000}],method:'DAO',procedureLead:null})`
+  )
+  // Un marché signé il y a 40 jours et jamais démarré : échéance de démarrage dépassée de 10 jours.
+  const gamma = await api(
+    `createCandidate({name:'Gamma Services',nif:'G-777',stat:null,address:null,phone:null,email:null})`
+  )
+  const lateProc = await api(
+    `createProcedure({reference:'DAO-ALERTE/2026',object:'Travaux',method:'DAO',ppmLineId:null,estimatedAmount:null})`
+  )
+  const lateBid = await api(
+    `addBid({procedureId:${JSON.stringify(lateProc.value.id)},candidateId:${JSON.stringify(gamma.value.id)},amount:700000})`
+  )
+  await api(
+    `setAward({procedureId:${JSON.stringify(lateProc.value.id)},bidId:${JSON.stringify(lateBid.value.bids[0].id)}})`
+  )
+  for (const [index, step] of [
+    'PUBLICATION',
+    'OUVERTURE_PLIS',
+    'EVALUATION',
+    'ATTRIBUTION'
+  ].entries()) {
+    await api(
+      `saveStepDates({procedureId:${JSON.stringify(lateProc.value.id)},step:'${step}',plannedDate:null,actualDate:${JSON.stringify(addDaysIso(TODAY, -80 + index))}})`
+    )
+    await api(`validateStep({procedureId:${JSON.stringify(lateProc.value.id)},step:'${step}'})`)
+  }
+  const lateContract = await api(
+    `createContract({kind:'MARCHE',procedureId:${JSON.stringify(lateProc.value.id)},reference:'M-ALERTE/2026',object:'Travaux',holderId:${JSON.stringify(gamma.value.id)},ppmLineId:null,amount:700000,signedOn:${JSON.stringify(addDaysIso(TODAY, -40))}})`
+  )
+  check(
+    'API : données d’essai des alertes créées',
+    [alertProc, lateLine, gamma, lateProc, lateBid, lateContract].every((r) => r.ok),
+    JSON.stringify([alertProc, lateLine, gamma, lateProc, lateBid, lateContract].find((r) => !r.ok))
+  )
+
+  const alertsApi = await evaluate('window.api.listAlerts()')
+  check(
+    'API : 3 échéances dépassées et 1 à venir, les retards les plus anciens en tête',
+    alertsApi.ok &&
+      alertsApi.value.overdueCount === 3 &&
+      alertsApi.value.upcomingCount === 1 &&
+      alertsApi.value.items.map((a) => `${a.kind}:${a.daysLeft}`).join('|') ===
+        'CONTRACT_NOT_STARTED:-10|PROCEDURE_STEP:-6|PPM_LINE_LAUNCH:-2|PROCEDURE_STEP:4',
+    JSON.stringify(
+      alertsApi.ok ? alertsApi.value.items.map((a) => `${a.kind}:${a.daysLeft}`) : alertsApi.error
+    )
+  )
+  const badHorizon = await evaluate('window.api.saveAlertHorizon({days:10})')
+  check(
+    'API : un délai d’alerte hors des choix proposés est rejeté à la frontière',
+    !badHorizon.ok && badHorizon.error.code === 'INVALID_REQUEST',
+    badHorizon.ok ? 'ACCEPTÉ !' : badHorizon.error.code
+  )
+
+  await send('Page.reload')
+  await waitUntil(
+    "!!document.querySelector('.nav-item__count--overdue')",
+    'pastille des alertes dans le menu'
+  )
+  check(
+    'interface : l’entrée « Alertes » du menu affiche 4 échéances, en rouge (retards)',
+    await evaluate(
+      "document.querySelector('.nav-item__count--overdue').innerText.trim().startsWith('4')"
+    )
+  )
+  check(
+    'interface : la page d’accueil résume les échéances',
+    (await evaluate(pageHas('3 échéance(s) dépassée(s)'))) &&
+      (await evaluate(pageHas('1 à venir dans les 15 prochains jours')))
+  )
+  const shotHomeAlerts = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(
+    join(outputDir, '8a-accueil-alertes.png'),
+    Buffer.from(shotHomeAlerts.data, 'base64')
+  )
+  check('clic « Voir les alertes »', await clickButton('Voir les alertes'))
+  await waitUntil(pageHas('Alertes d’échéances'), 'page des alertes')
+  await waitUntil(pageHas('En retard (3)'), 'groupe des retards')
+  check(
+    'interface : groupes « En retard (3) » et « À venir (1) », avec les échéances décrites',
+    (await evaluate(pageHas('À venir (1)'))) &&
+      (await evaluate(pageHas('En retard de 10 jours'))) &&
+      (await evaluate(pageHas('En retard de 6 jours'))) &&
+      (await evaluate(pageHas('En retard de 2 jours'))) &&
+      (await evaluate(pageHas('Dans 4 jours')))
+  )
+  const shotAlerts = await send('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(outputDir, '8-alertes.png'), Buffer.from(shotAlerts.data, 'base64'))
+
+  check(
+    'clic « Ouvrir » sur l’alerte de la procédure',
+    await clickByLabel('Ouvrir AOR-ALERTE/2026 : Ouverture des plis')
+  )
+  await waitUntil(pageHas('Procédure AOR-ALERTE/2026'), 'procédure ouverte depuis l’alerte')
+  check('interface : l’alerte ouvre directement la procédure concernée', true)
+
+  check('clic « Alertes » (menu)', await clickByText('Alertes'))
+  await waitUntil(pageHas('Alertes d’échéances'), 'retour aux alertes')
+  check(
+    'clic « Ouvrir » sur l’alerte du marché',
+    await clickByLabel('Ouvrir M-ALERTE/2026 : Émettre l’ordre de service de démarrage')
+  )
+  await waitUntil(pageHas('Contrat M-ALERTE/2026'), 'marché ouvert depuis l’alerte')
+  check('interface : l’alerte ouvre directement le marché concerné', true)
+
+  check('clic « Alertes » (menu)', await clickByText('Alertes'))
+  await waitUntil(pageHas('Régler le délai'), 'bouton de réglage')
+  check('clic « Régler le délai »', await clickButton('Régler le délai'))
+  await waitUntil('!!document.querySelector("#alert-horizon")', 'réglage du délai')
+  await setField('#alert-horizon', '60')
+  check('clic « Enregistrer le délai »', await clickButton('Enregistrer le délai'))
+  await waitUntil(pageHas('Délai enregistré.'), 'délai enregistré')
+  check('clic « Alertes » (menu)', await clickByText('Alertes'))
+  await waitUntil(pageHas('À venir (2)'), 'échéance lointaine désormais signalée')
+  check('interface : avec 60 jours, l’échéance à 40 jours apparaît (À venir (2))', true)
+  const horizonOnDisk = JSON.parse(readFileSync(join(dataDir, 'settings.json'), 'utf8'))
+  check(
+    'disque : le délai de 60 jours est enregistré dans settings.json, le nom de la PRMP est conservé',
+    horizonOnDisk.alertHorizonDays === 60 && horizonOnDisk.organizationName === ORG
+  )
+  await evaluate('window.api.saveAlertHorizon({days:15})')
+
   await evaluate('window.api.closeSession()')
   const noRegion = await evaluate('window.api.listPpms()')
   check(
@@ -1141,9 +1288,9 @@ try {
   )
   const settings = JSON.parse(readFileSync(join(dataDir, 'settings.json'), 'utf8'))
   check(
-    'settings.json contient uniquement le nom de la PRMP (aucun secret)',
+    'settings.json contient uniquement le nom de la PRMP et le délai d’alerte (aucun secret)',
     settings.organizationName === ORG &&
-      Object.keys(settings).sort().join() === 'organizationName,version',
+      Object.keys(settings).sort().join() === 'alertHorizonDays,organizationName,version',
     JSON.stringify(settings)
   )
   const readableAnywhere = dbFiles.some((f) => {

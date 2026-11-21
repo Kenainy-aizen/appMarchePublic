@@ -37,12 +37,14 @@ export function App(): React.JSX.Element {
   const [view, setView] = useState<View>({ kind: 'loading' })
   const [appInfo, setAppInfo] = useState<AppInfoDto | null>(null)
   const [organizationName, setOrganizationName] = useState<string | null>(null)
+  const [alertHorizonDays, setAlertHorizonDays] = useState(15)
 
   /** Va à l'écran de connexion, ou à la configuration initiale s'il n'existe encore aucune région. */
   const showEntryScreen = useCallback(async (): Promise<void> => {
     try {
       const overview = unwrap(await window.api.getRegionsOverview())
       setOrganizationName(overview.organizationName)
+      setAlertHorizonDays(overview.alertHorizonDays)
       setView(entryView(overview))
     } catch (failure) {
       setView({ kind: 'failed', message: messageOf(failure) })
@@ -55,6 +57,7 @@ export function App(): React.JSX.Element {
       try {
         const overview = unwrap(await window.api.getRegionsOverview())
         setOrganizationName(overview.organizationName)
+        setAlertHorizonDays(overview.alertHorizonDays)
         const { region } = unwrap(await window.api.getSession())
         setView(region ? { kind: 'workspace', region } : entryView(overview))
       } catch (failure) {
@@ -71,6 +74,8 @@ export function App(): React.JSX.Element {
         appInfo={appInfo}
         onClosed={() => void showEntryScreen()}
         onOrganizationSaved={setOrganizationName}
+        alertHorizonDays={alertHorizonDays}
+        onAlertHorizonSaved={setAlertHorizonDays}
       />
     )
   }

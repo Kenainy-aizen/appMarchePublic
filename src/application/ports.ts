@@ -61,6 +61,9 @@ export interface OrganizationSettings {
   /** Nom de la PRMP, ou null tant qu'il n'a pas été renseigné. */
   getName(): string | null
   saveName(name: string): void
+  /** Combien de jours à l'avance signaler une échéance (7, 15, 30 ou 60 ; 15 par défaut). */
+  getAlertHorizonDays(): number
+  saveAlertHorizonDays(days: number): void
 }
 
 /** Contenu des documents joints d'UNE région : fichiers chiffrés, jamais lisibles en clair sur le disque. */

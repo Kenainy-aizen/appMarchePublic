@@ -15,6 +15,7 @@ import {
   openRegionInputSchema,
   saveOrganizationInputSchema
 } from '@shared/ipc-schemas'
+import { type AlertUseCases, registerAlertHandlers } from './register-alert-handlers'
 import { type CandidateUseCases, registerCandidateHandlers } from './register-candidate-handlers'
 import {
   type AttachmentUseCases,
@@ -27,7 +28,13 @@ import { type ProcedureUseCases, registerProcedureHandlers } from './register-pr
 import { parseInput, runSafely } from './safe-handler'
 
 export interface UseCases
-  extends PpmUseCases, ProcedureUseCases, CandidateUseCases, ContractUseCases, AttachmentUseCases {
+  extends
+    PpmUseCases,
+    ProcedureUseCases,
+    CandidateUseCases,
+    ContractUseCases,
+    AttachmentUseCases,
+    AlertUseCases {
   readonly getAppInfo: GetAppInfoUseCase
   readonly listRegions: ListRegionsUseCase
   readonly createRegion: CreateRegionUseCase
@@ -73,4 +80,5 @@ export function registerIpcHandlers(useCases: UseCases, saveCopy: SaveCopy): voi
   registerCandidateHandlers(useCases)
   registerContractHandlers(useCases)
   registerAttachmentHandlers(useCases, saveCopy)
+  registerAlertHandlers(useCases)
 }

@@ -352,3 +352,22 @@
     display: block;
   }
 }
+
+/* Pastille du nombre d'alertes dans le menu */
+.nav-item__count {
+  margin-left: auto;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.5rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+  color: var(--forest-900);
+  background: var(--forest-100);
+  border-radius: 999px;
+}
+
+.nav-item__count--overdue {
+  color: #ffffff;
+  background: var(--laterite);
+}
