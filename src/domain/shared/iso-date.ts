@@ -24,3 +24,22 @@ export function parseIsoDate(value: string): IsoDate {
 export function parseOptionalIsoDate(value: string | null): IsoDate | null {
   return value === null ? null : parseIsoDate(value)
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+const toUtcMs = (date: string): number => {
+  const [year, month, day] = date.split('-').map(Number)
+  return Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1)
+}
+
+/** Nombre de jours entiers de `from` à `to` (négatif si `to` est avant `from`). */
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  return Math.round((toUtcMs(to) - toUtcMs(from)) / MS_PER_DAY)
+}
+
+export function addDays(date: IsoDate, days: number): IsoDate {
+  const moved = new Date(toUtcMs(date) + days * MS_PER_DAY)
+  const month = String(moved.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(moved.getUTCDate()).padStart(2, '0')
+  return parseIsoDate(`${String(moved.getUTCFullYear()).padStart(4, '0')}-${month}-${day}`)
+}

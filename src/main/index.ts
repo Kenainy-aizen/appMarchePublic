@@ -6,6 +6,7 @@ import { RegionSession } from '@application/region-session'
 import { CloseRegionUseCase, GetSessionUseCase } from '@application/regions/close-and-get-session'
 import { CreateRegionUseCase } from '@application/regions/create-region'
 import { ListRegionsUseCase } from '@application/regions/list-regions'
+import { ListAlertsUseCase, SaveAlertHorizonUseCase } from '@application/alerts/alert-use-cases'
 import {
   AddAttachmentUseCase,
   ListAttachmentsUseCase,
@@ -129,6 +130,8 @@ function bootstrap(): RegionSession {
       addContractEvent: new AddContractEventUseCase(session, ids),
       removeLastContractEvent: new RemoveLastContractEventUseCase(session),
       listContractableProcedures: new ListContractableProceduresUseCase(session),
+      listAlerts: new ListAlertsUseCase(session, settings, clock),
+      saveAlertHorizon: new SaveAlertHorizonUseCase(settings),
       listAttachments: new ListAttachmentsUseCase(session),
       addAttachment: new AddAttachmentUseCase(session, ids, clock),
       removeAttachment: new RemoveAttachmentUseCase(session),

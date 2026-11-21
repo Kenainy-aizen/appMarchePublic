@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { PpmSummaryDto } from '@shared/api'
+import type { AlertsDto, PpmSummaryDto } from '@shared/api'
 import { messageOf, unwrap } from '../api-errors'
 import { formatAriary, formatDate } from '../format'
 import type { SectionId } from '../layouts/AppShell'
@@ -11,6 +11,8 @@ import { PageHeader } from '../ui/PageHeader'
 interface Props {
   readonly regionName: string
   readonly organizationName: string | null
+  /** null tant que les alertes ne sont pas chargées. */
+  readonly alerts: AlertsDto | null
   readonly onNavigate: (section: SectionId) => void
 }
 
@@ -18,6 +20,7 @@ interface Props {
 export function HomeSection({
   regionName,
   organizationName,
+  alerts,
   onNavigate
 }: Props): React.JSX.Element {
   const [ppms, setPpms] = useState<readonly PpmSummaryDto[] | null>(null)
@@ -66,6 +69,32 @@ export function HomeSection({
               }}
             >
               Renseigner le nom de la PRMP
+            </button>
+          </div>
+        </Alert>
+      )}
+
+      {alerts !== null && alerts.overdueCount + alerts.upcomingCount > 0 && (
+        <Alert tone={alerts.overdueCount > 0 ? 'error' : 'warning'}>
+          <p>
+            <strong>
+              {alerts.overdueCount > 0
+                ? `${String(alerts.overdueCount)} échéance(s) dépassée(s)`
+                : 'Aucune échéance dépassée'}
+            </strong>
+            {alerts.upcomingCount > 0 &&
+              `, ${String(alerts.upcomingCount)} à venir dans les ${String(alerts.horizonDays)} prochains jours`}
+            .
+          </p>
+          <div className="alert__action">
+            <button
+              type="button"
+              className="secondary small"
+              onClick={() => {
+                onNavigate('alerts')
+              }}
+            >
+              Voir les alertes
             </button>
           </div>
         </Alert>

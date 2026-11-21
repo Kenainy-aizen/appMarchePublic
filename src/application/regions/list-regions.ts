@@ -4,6 +4,8 @@ import type { OrganizationSettings, RegionRegistry } from '../ports'
 export interface RegionsOverview {
   /** Nom de la PRMP, ou null tant qu'il n'a pas été renseigné. */
   readonly organizationName: string | null
+  /** Délai d'alerte des échéances, en jours. */
+  readonly alertHorizonDays: number
   readonly regions: readonly RegionSummary[]
   readonly canCreate: boolean
   /** Nom proposé par défaut pour la prochaine région (modifiable par l'utilisateur). */
@@ -21,6 +23,7 @@ export class ListRegionsUseCase {
     const regions = this.registry.list().map(({ id, name }): RegionSummary => ({ id, name }))
     return {
       organizationName: this.settings.getName(),
+      alertHorizonDays: this.settings.getAlertHorizonDays(),
       regions,
       canCreate: regions.length < MAX_REGIONS,
       suggestedName: suggestRegionName(regions.map((region) => region.name))

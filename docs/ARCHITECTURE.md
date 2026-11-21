@@ -373,3 +373,37 @@ La taille (20 Mo) est bornée dès le schéma Zod, avant tout traitement du cont
 - Contrôle par mutation : 12 régressions volontaires (type non autorisé, fichier trop gros, signature non vérifiée, chemin dans le nom, objet non vérifié, fichier orphelin non nettoyé, procédure supprimée sans ses documents, identifiant non lié au fichier, identifiant non contrôlé, document écrit en clair, région supprimée sans ses documents, contrôle de taille de l'interface) sont toutes détectées.
 - Sur le disque : un seul fichier par document, nommé par un identifiant, ni contenu ni nom d'origine lisibles (fichiers et bases) ; un fichier modifié, vidé, recopié sous un autre nom ou ouvert avec la clé d'une autre région est refusé ; les documents d'une région sont inaccessibles depuis une autre.
 - Test de bout en bout : 164 vérifications, dont la jointure d'un document par le vrai sélecteur de fichier, le refus d'un exécutable renommé en .pdf et d'un fichier .exe, le retrait (fichier effacé du disque) et l'absence de tout contenu lisible dans les fichiers de données.
+
+## 16. Phase 9 — Alertes d'échéances
+
+### Fichiers
+
+    src/domain/alerts.ts                              computeAlerts (calcul pur), délais proposés, countBySeverity
+    src/domain/shared/iso-date.ts                     + daysBetween, addDays
+    src/application/alerts/alert-use-cases.ts         ListAlertsUseCase, SaveAlertHorizonUseCase
+    src/application/ports.ts                          OrganizationSettings + délai d'alerte
+    src/infrastructure/json-organization-settings.ts  settings.json : nom de la PRMP + délai d'alerte (sans secret)
+    src/main/ipc/register-alert-handlers.ts           2 canaux
+    src/shared/alert-options.ts                       délais et libellés (un test les compare au domaine)
+    src/renderer/src/screens/AlertsScreen.tsx         page des échéances ; accueil, menu et paramètres complétés
+
+### Canaux IPC
+
+| Canal                       | Entrée                 | Résultat                                            |
+| --------------------------- | ---------------------- | --------------------------------------------------- |
+| alert:list                  | —                      | échéances, compteurs, date du jour (région ouverte) |
+| settings:save-alert-horizon | `days` (7, 15, 30, 60) | `{ alertHorizonDays }` (sans région)                |
+
+La vue d'ensemble des régions fournit aussi `alertHorizonDays` (comme le nom de la PRMP).
+
+### Où vit chaque règle
+
+- Domaine : classement en retard / à venir, trois sources d'échéances, tri, délais autorisés. Fonction pure : la date du jour est passée en paramètre.
+- Application : lecture des données de la région, horloge, réglage ; rien n'est stocké.
+- Interface : textes (« En retard de 5 jours », « Demain »), pastille, ouverture de l'élément concerné ; le domaine reste l'autorité.
+
+### Garanties vérifiées par des tests
+
+- Contrôle par mutation : 14 régressions volontaires (limite de l'horizon, jour même, étapes validées, ligne déjà lancée, conventions, délai de 30 jours, ordre du tri, délai inconnu, nom effaçant le délai, délai non validé, pastille, « Demain », ouverture du mauvais module, résumé de l'accueil) sont toutes détectées. Une 15e mutation a révélé une condition morte (procédure terminée), supprimée.
+- Sur de vraies bases : les trois sortes d'alertes avec de vraies dates, recalcul identique après redémarrage, disparition d'une alerte dès que l'échéance est replanifiée, délai partagé entre régions, aucune alerte d'une région dans une autre.
+- Test de bout en bout : 183 vérifications, dont la création de données d'essai relatives à la date du jour, la pastille et le résumé de l'accueil, les groupes de la page, l'ouverture directe d'une procédure et d'un marché depuis une alerte, le changement de délai (60 jours fait apparaître une échéance à 40 jours) et le contenu de `settings.json`.

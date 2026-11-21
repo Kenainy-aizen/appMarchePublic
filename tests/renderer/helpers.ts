@@ -16,11 +16,15 @@ export function installApiMock(): ApiMock {
     getAppInfo: vi
       .fn<PrmpApi['getAppInfo']>()
       .mockResolvedValue({ name: 'Suivi des marchés publics', version: '0.1.0' }),
-    getRegionsOverview: vi
-      .fn<PrmpApi['getRegionsOverview']>()
-      .mockResolvedValue(
-        ok({ organizationName: null, regions: [], canCreate: true, suggestedName: 'Région 1' })
-      ),
+    getRegionsOverview: vi.fn<PrmpApi['getRegionsOverview']>().mockResolvedValue(
+      ok({
+        organizationName: null,
+        alertHorizonDays: 15,
+        regions: [],
+        canCreate: true,
+        suggestedName: 'Région 1'
+      })
+    ),
     saveOrganization: vi
       .fn<PrmpApi['saveOrganization']>()
       .mockResolvedValue(ok({ name: 'PRMP de test' })),
@@ -62,6 +66,12 @@ export function installApiMock(): ApiMock {
     listContractableProcedures: vi
       .fn<PrmpApi['listContractableProcedures']>()
       .mockResolvedValue(ok([])),
+    listAlerts: vi
+      .fn<PrmpApi['listAlerts']>()
+      .mockResolvedValue(
+        ok({ today: '2026-06-15', horizonDays: 15, overdueCount: 0, upcomingCount: 0, items: [] })
+      ),
+    saveAlertHorizon: vi.fn<PrmpApi['saveAlertHorizon']>(),
     listAttachments: vi.fn<PrmpApi['listAttachments']>().mockResolvedValue(ok([])),
     addAttachment: vi.fn<PrmpApi['addAttachment']>(),
     removeAttachment: vi.fn<PrmpApi['removeAttachment']>().mockResolvedValue(ok(null)),

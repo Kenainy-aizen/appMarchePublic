@@ -103,6 +103,11 @@ const api: PrmpApi = {
     ipcRenderer.invoke(IpcChannels.contractableProcedureList) as ReturnType<
       PrmpApi['listContractableProcedures']
     >,
+  listAlerts: () => ipcRenderer.invoke(IpcChannels.alertList) as ReturnType<PrmpApi['listAlerts']>,
+  saveAlertHorizon: (input) =>
+    ipcRenderer.invoke(IpcChannels.settingsSaveAlertHorizon, input) as ReturnType<
+      PrmpApi['saveAlertHorizon']
+    >,
   listAttachments: (input) =>
     ipcRenderer.invoke(IpcChannels.attachmentList, input) as ReturnType<PrmpApi['listAttachments']>,
   addAttachment: (input) =>

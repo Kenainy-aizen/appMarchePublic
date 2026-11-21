@@ -1,7 +1,14 @@
 import type { AppInfoDto } from '@shared/api'
 import { FlagMark, Icon, type IconName } from '../ui/Icon'
 
-export type SectionId = 'home' | 'ppm' | 'procedures' | 'candidates' | 'contracts' | 'settings'
+export type SectionId =
+  'home' | 'alerts' | 'ppm' | 'procedures' | 'candidates' | 'contracts' | 'settings'
+
+/** Nombre d'échéances dépassées et à venir, affiché sur l'entrée « Alertes ». */
+export interface AlertCounts {
+  readonly overdue: number
+  readonly upcoming: number
+}
 
 interface NavEntry {
   readonly id: SectionId | null
@@ -13,6 +20,7 @@ interface NavEntry {
 
 const MAIN_NAV: readonly NavEntry[] = [
   { id: 'home', label: 'Accueil', icon: 'home' },
+  { id: 'alerts', label: 'Alertes', icon: 'bell' },
   { id: 'ppm', label: 'Plan de passation (PPM)', icon: 'list' },
   { id: 'procedures', label: 'Procédures', icon: 'briefcase' },
   { id: 'candidates', label: 'Candidats', icon: 'users' },
@@ -24,6 +32,8 @@ interface Props {
   readonly regionName: string
   readonly appInfo: AppInfoDto | null
   readonly section: SectionId
+  /** null tant que les alertes ne sont pas chargées. */
+  readonly alertCounts: AlertCounts | null
   readonly onNavigate: (section: SectionId) => void
   readonly onSwitchRegion: () => void
   readonly children: React.ReactNode
@@ -35,6 +45,7 @@ export function AppShell({
   regionName,
   appInfo,
   section,
+  alertCounts,
   onNavigate,
   onSwitchRegion,
   children
@@ -53,6 +64,23 @@ export function AppShell({
         <Icon name={entry.icon} />
         {entry.label}
         {entry.soon && <span className="nav-item__tag">Bientôt</span>}
+        {entry.id === 'alerts' &&
+          alertCounts !== null &&
+          alertCounts.overdue + alertCounts.upcoming > 0 && (
+            <span
+              className={
+                alertCounts.overdue > 0
+                  ? 'nav-item__count nav-item__count--overdue'
+                  : 'nav-item__count'
+              }
+            >
+              {alertCounts.overdue + alertCounts.upcoming}
+              <span className="visually-hidden">
+                {' '}
+                échéance(s) à surveiller, dont {alertCounts.overdue} en retard
+              </span>
+            </span>
+          )}
       </button>
     </li>
   )

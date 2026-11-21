@@ -143,6 +143,7 @@ describe('ListRegionsUseCase', () => {
   it('propose « Région 1 » au départ, puis le premier nom libre', async () => {
     expect(list.execute()).toEqual({
       organizationName: null,
+      alertHorizonDays: 15,
       regions: [],
       canCreate: true,
       suggestedName: 'Région 1'

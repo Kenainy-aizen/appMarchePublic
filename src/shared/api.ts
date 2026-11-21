@@ -14,6 +14,7 @@ import type {
   createProcedureInputSchema,
   createRegionInputSchema,
   openRegionInputSchema,
+  saveAlertHorizonInputSchema,
   saveOrganizationInputSchema,
   ppmIdInputSchema,
   procedureIdInputSchema,
@@ -34,6 +35,7 @@ export type AppInfoDto = z.infer<typeof appInfoSchema>
 export type CreateRegionInputDto = z.infer<typeof createRegionInputSchema>
 export type OpenRegionInputDto = z.infer<typeof openRegionInputSchema>
 export type SaveOrganizationInputDto = z.infer<typeof saveOrganizationInputSchema>
+export type SaveAlertHorizonInputDto = z.infer<typeof saveAlertHorizonInputSchema>
 export type PpmIdInputDto = z.infer<typeof ppmIdInputSchema>
 export type CreatePpmInputDto = z.infer<typeof createPpmInputSchema>
 export type SavePpmLineInputDto = z.infer<typeof savePpmLineInputSchema>
@@ -67,6 +69,8 @@ export interface RegionSummaryDto {
 export interface RegionsOverviewDto {
   /** Nom de la PRMP, ou null tant qu'il n'a pas été renseigné. */
   readonly organizationName: string | null
+  /** Délai d'alerte des échéances, en jours (7, 15, 30 ou 60). */
+  readonly alertHorizonDays: number
   readonly regions: readonly RegionSummaryDto[]
   readonly canCreate: boolean
   readonly suggestedName: string
@@ -195,6 +199,34 @@ export interface ExportResultDto {
   readonly saved: boolean
 }
 
+/** Une échéance à surveiller. Les alertes sont recalculées à chaque appel, jamais enregistrées. */
+export interface AlertDto {
+  readonly key: string
+  /** PROCEDURE_STEP, PPM_LINE_LAUNCH ou CONTRACT_NOT_STARTED. */
+  readonly kind: string
+  /** OVERDUE (échéance dépassée) ou UPCOMING (dans le délai d'alerte). */
+  readonly severity: string
+  readonly dueOn: string
+  /** Négatif quand l'échéance est dépassée ; 0 le jour même. */
+  readonly daysLeft: number
+  readonly subject: string
+  readonly action: string
+  /** PROCEDURE, PPM ou CONTRACT : l'élément à ouvrir. */
+  readonly target: { readonly kind: string; readonly id: string }
+}
+
+export interface AlertsDto {
+  readonly today: string
+  readonly horizonDays: number
+  readonly overdueCount: number
+  readonly upcomingCount: number
+  readonly items: readonly AlertDto[]
+}
+
+export interface AlertHorizonDto {
+  readonly alertHorizonDays: number
+}
+
 /** Résumé d'un contrat (liste). Montants en Ariary entiers. */
 export interface ContractSummaryDto {
   readonly id: string
@@ -310,6 +342,8 @@ export interface PrmpApi {
   addContractEvent(input: AddContractEventInputDto): Promise<ApiResult<ContractDetailDto>>
   removeLastContractEvent(input: ContractIdInputDto): Promise<ApiResult<ContractDetailDto>>
   listContractableProcedures(): Promise<ApiResult<readonly ContractableProcedureDto[]>>
+  listAlerts(): Promise<ApiResult<AlertsDto>>
+  saveAlertHorizon(input: SaveAlertHorizonInputDto): Promise<ApiResult<AlertHorizonDto>>
   listAttachments(input: AttachmentOwnerInputDto): Promise<ApiResult<readonly AttachmentDto[]>>
   addAttachment(input: AddAttachmentInputDto): Promise<ApiResult<AttachmentDto>>
   removeAttachment(input: AttachmentIdInputDto): Promise<ApiResult<null>>

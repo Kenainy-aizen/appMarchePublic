@@ -1,11 +1,11 @@
 # PROGRESS — Suivi des marchés publics (PRMP, version locale)
 
 > Mémoire du projet. À lire EN PREMIER à chaque reprise de conversation.
-> Dernière mise à jour : 2026-11-13 (Phase 8 livrée, en attente de validation)
+> Dernière mise à jour : 2026-11-21 (Phase 9 livrée, en attente de validation)
 
 ## Phase courante
 
-**Phase 8 — Documents joints** (code terminé, EN ATTENTE de validation par l'utilisateur)
+**Phase 9 — Alertes d'échéances** (code terminé, EN ATTENTE de validation par l'utilisateur)
 
 ## Contexte en bref
 
@@ -27,8 +27,8 @@ Développement sous Linux ; cible Windows 10.
 | 5   | Procédures de passation et suivi des étapes                           | TERMINÉ                  |
 | 6   | Candidats / soumissionnaires et offres                                | TERMINÉ                  |
 | 7   | Contrats et exécution (OS, réceptions, avenants, clôture)             | TERMINÉ                  |
-| 8   | Documents joints                                                      | EN ATTENTE DE VALIDATION |
-| 9   | Alertes d'échéances                                                   | À FAIRE                  |
+| 8   | Documents joints                                                      | TERMINÉ                  |
+| 9   | Alertes d'échéances                                                   | EN ATTENTE DE VALIDATION |
 | 10  | Tableau de bord                                                       | À FAIRE                  |
 | 11  | États imprimables (PDF / Excel)                                       | À FAIRE                  |
 | 12  | Gestion des mots de passe des régions, sauvegarde et restauration     | À FAIRE                  |
@@ -71,9 +71,13 @@ Développement sous Linux ; cible Windows 10.
 - 2026-11-13 — Phase 7 considérée comme acceptée (message « Continuer », sans retour d'essai) : si les essais manuels révèlent un défaut, il sera corrigé avant la suite.
 - 2026-11-13 — Phase 8 : documents joints à une procédure, un contrat ou un candidat, chiffrés sur le disque, avec contrôle du type, de la taille et du contenu (ADR-030). Vérifié sous Linux : types, lint, 564 tests, build, e2e 164/164 (vrai sélecteur de fichier, fichiers lus sur le disque), 12 mutations toutes détectées. Défaut trouvé sur la capture et corrigé : séparateur manquant au-dessus du formulaire d'envoi. Non vérifié : Windows 10 ; la boîte de dialogue « Enregistrer une copie » n'est pas pilotable en test automatique.
 - 2026-11-13 — Méthode : la sortie de ma première série de mutations était illisible (caractères binaires dans les noms de test, grep muet) et un motif était introuvable ; 5 mutations sur 12 ont donc été refaites et vérifiées une à une avant de conclure.
+- 2026-11-21 — Phase 8 validée par l'utilisateur (« ça marche »).
+- 2026-11-21 — Phase 9 : alertes d'échéances calculées à chaque affichage, jamais stockées ; trois sources (étapes de procédure, lancements prévus du plan, marchés signés non démarrés après 30 jours) ; délai d'alerte réglable (7, 15, 30, 60 jours, 15 par défaut) ; menu avec pastille, résumé sur l'accueil, page dédiée avec ouverture directe de l'élément concerné (ADR-031). Vérifié sous Linux : types, lint, 649 tests, build, e2e 183/183, 14 mutations toutes détectées. Un contrôle par mutation a révélé une condition morte (une procédure terminée est déjà exclue par ses étapes validées) : supprimée plutôt que laissée sans test. Non vérifié : Windows 10.
+- 2026-11-21 — Rappel de méthode : sur 15 mutations, une n'a pas pu être appliquée (le reformatage avait changé le motif) ; elle a été refaite et vérifiée avant de conclure.
 
 ## Décisions en attente
 
+- ADR-031 : alertes d'échéances (trois sources, délai de 30 jours pour le démarrage d'un marché inventé par défaut, délai d'alerte 7/15/30/60 jours, pas de notification système) ; à confirmer avec la PRMP, notamment le délai de démarrage et les échéances à suivre.
 - ADR-030 : documents joints (objets concernés, types acceptés, 20 Mo, chiffrement, pas d'aperçu, copie par boîte de dialogue) ; à confirmer avec la PRMP, notamment les types de fichiers et la taille maximale.
 - ADR-029 : règles des contrats et de leur exécution (succession des événements, dates, avenants sans plafond, annulation du dernier événement, gel de l'en-tête, suppression) ; à confirmer avec la PRMP, notamment un éventuel plafond d'avenants.
 - ADR-028 : règles des candidats et des offres (NIF unique, suppression refusée si offre ou contrat, offre retenue unique, attribution exigeant une offre retenue, verrou après attribution) ; à confirmer avec la PRMP.
@@ -85,15 +89,15 @@ Développement sous Linux ; cible Windows 10.
 
 ## Prochaines actions
 
-1. L'utilisateur intègre le zip de la Phase 8 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à la main : ouvrir un contrat > « Documents joints » > choisir un PDF réel (un PV, un scan) > « Joindre le document » ; essayer un fichier .exe et un PDF endommagé ; « Copie » > enregistrer une copie et l'ouvrir ; retirer le document ; joindre un document à une procédure et à un candidat (en modification) ; vérifier dans le dossier de données (`regions/<id>.files`) que les fichiers ne sont pas lisibles.
-2. Faire confirmer par la PRMP : objets concernés, types de fichiers et taille maximale (ADR-030), puis les règles des phases 4 à 7 (ADR-023, 027, 028, 029).
-3. Valider la Phase 8.
-4. Démarrer la Phase 9 : alertes d'échéances (dates prévues des étapes de procédure, dates prévisionnelles des lignes du plan, événements d'exécution à venir) affichées à l'ouverture de la région, sans connexion ni notification système. Question préalable : à partir de combien de jours à l'avance alerter, et quelles échéances comptent ?
+1. L'utilisateur intègre le zip de la Phase 9 (voir docs/GIT_WORKFLOW.md), puis lance : `npm install`, `npm test`, `npm run lint`, `npm run build`, `npm run dev`, et confirme. Essai à la main : dans une procédure, saisir une date prévue passée pour une étape (« Dates ») et une date proche pour une autre ; vérifier la pastille « Alertes » du menu, le résumé de l'accueil et la page des alertes ; « Ouvrir » sur une alerte ; changer le délai dans les Paramètres (60 jours) et constater l'effet ; valider l'étape et constater que l'alerte disparaît.
+2. Faire confirmer par la PRMP : les échéances à suivre et le délai de démarrage d'un marché (ADR-031), puis les règles des phases 4 à 8 (ADR-023, 027, 028, 029, 030).
+3. Valider la Phase 9.
+4. Démarrer la Phase 10 : tableau de bord de la région (accueil enrichi : procédures par situation, montants par mode de passation, marchés en cours, échéances). Question préalable : quels indicateurs la PRMP veut-elle voir en premier, et sur quelle période (année de l'exercice) ?
 
 ## Points à reprendre dans les phases suivantes
 
 - Phase 12 : la sauvegarde d'une région doit contenir `<id>.sqlite` ET le dossier `<id>.files` ensemble, avec `regions.json` et `settings.json` ; la restauration doit refuser un jeu incomplet.
-- Phase 9 : les alertes d'échéances s'appuieront sur les dates prévues des étapes (déjà saisissables) et sur les dates prévisionnelles des lignes du plan.
+- Phase 10 : le tableau de bord réutilise `computeAlerts` pour le bloc des échéances, et les compteurs de l'accueil ; garder les indicateurs calculés à l'affichage (rien de stocké).
 - Accueil : afficher le nombre de procédures en cours (non fait en Phase 5, pour garder la phase ciblée).
 - Phase 12 : permettre de DÉFINIR un nouveau mot de passe avec la clé de récupération (écran « Mot de passe oublié » + cas d'utilisation) ; changer le mot de passe (ancien requis) ; RÉGÉNÉRER la clé de récupération région ouverte ; renommer une région ; sauvegarde et restauration : la sauvegarde doit inclure `regions.json` ET les fichiers `regions/*.sqlite` (sans le registre, les bases sont inutilisables).
 - Phase 3 (limite connue) : la clé de récupération n'est affichée qu'une fois ; si l'utilisateur ferme l'application avant de l'avoir notée, elle est perdue (régénération prévue en Phase 12).

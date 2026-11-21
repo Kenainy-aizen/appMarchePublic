@@ -113,4 +113,11 @@ export class InMemoryOrganizationSettings implements OrganizationSettings {
   saveName(name: string): void {
     this.name = name
   }
+  private horizon = 15
+  getAlertHorizonDays(): number {
+    return this.horizon
+  }
+  saveAlertHorizonDays(days: number): void {
+    this.horizon = days
+  }
 }

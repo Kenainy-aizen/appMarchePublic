@@ -10,6 +10,7 @@ afterEach(cleanup)
 
 const overview: RegionsOverviewDto = {
   organizationName: 'PRMP de Fianarantsoa',
+  alertHorizonDays: 15,
   regions: [{ id: 'r1', name: 'Région 1' }],
   canCreate: true,
   suggestedName: 'Région 2'

@@ -272,3 +272,17 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Lecture : le contenu déchiffré ne quitte le processus principal que par « Enregistrer une copie » (boîte de dialogue du système, emplacement choisi par l'utilisateur) : le document en clair ne touche le disque qu'à cet endroit. Pas d'aperçu intégré ni d'ouverture directe (éviterait un fichier temporaire en clair).
 - Limite connue : « Enregistrer une copie » repose sur la boîte de dialogue native, que le test de bout en bout ne peut pas piloter ; le chemin est couvert par les tests des cas d'utilisation et du déchiffrement, pas par un clic réel.
 - Sélecteur de fichier : natif (le nom du bouton suit la langue du système).
+
+## ADR-031 — Alertes d'échéances (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-11-21).
+- Principe : les alertes sont **calculées à chaque affichage** à partir des données de la région et de la date du jour ; elles ne sont **jamais enregistrées** (donc jamais périmées : traiter ou replanifier une échéance la fait disparaître). Pas de notification système ni d'e-mail : l'application est locale et hors ligne.
+- Trois sources d'échéances :
+  1. **Étape de procédure** non validée ayant une date prévue (toutes les étapes concernées, pas seulement la prochaine) ;
+  2. **Lancement prévu d'une ligne du plan** qui n'a donné lieu à aucune procédure ni aucun contrat ;
+  3. **Marché signé non démarré** : l'ordre de service de démarrage est attendu dans les **30 jours** suivant la signature (délai fixe, inventé par défaut : à confirmer ; seuls les marchés issus d'une procédure sont suivis, pas les conventions ni les achats directs).
+- Classement : **en retard** = échéance avant aujourd'hui ; **à venir** = d'aujourd'hui jusqu'au délai d'alerte compris ; au-delà, aucune alerte. Tri : retards d'abord (le plus ancien en tête), puis à venir (le plus proche en tête).
+- Délai d'alerte : réglage **général** (toutes les régions) dans les Paramètres : 7, 15, 30 ou 60 jours, **15 par défaut**. Il est conservé dans `settings.json` avec le nom de la PRMP (sans secret) ; un fichier antérieur à la Phase 9 reste lisible, un délai inconnu revient à 15.
+- Affichage : entrée « Alertes » du menu avec pastille (rouge s'il y a un retard), résumé sur l'accueil à l'ouverture de la région, page dédiée avec lien « Ouvrir » vers la procédure, le marché ou le plan concerné.
+- Non couvert : dates d'exécution de marché prévues (le modèle n'en a pas), échéances de garantie ou de validité d'offre, rappels répétés ou « mettre en sourdine » une alerte.
+- Aucune migration de base : rien n'est stocké.

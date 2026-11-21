@@ -560,3 +560,17 @@ td .visually-hidden + input {
 .inline-form > h3 {
   margin-bottom: 0.25rem;
 }
+
+/* ---------- Alertes d'échéances ---------- */
+.panel__title--padded {
+  padding: 1.25rem 1.5rem 0.75rem;
+  margin: 0;
+}
+
+tbody tr.is-overdue {
+  box-shadow: inset 3px 0 0 var(--laterite);
+}
+
+tbody tr.is-overdue td:first-child strong {
+  color: var(--laterite-dark);
+}

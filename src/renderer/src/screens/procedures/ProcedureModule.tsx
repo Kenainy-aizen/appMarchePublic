@@ -13,11 +13,21 @@ type View =
 interface Props {
   readonly onCreateContract: (procedureId: string) => void
   readonly onOpenContract: (contractId: string) => void
+  /** Procédure à ouvrir directement (lien venu d'une alerte). */
+  readonly initialProcedureId?: string | null
 }
 
 /** Module « Procédures » : liste, création, détail avec ses étapes, modification de l'en-tête. */
-export function ProcedureModule({ onCreateContract, onOpenContract }: Props): React.JSX.Element {
-  const [view, setView] = useState<View>({ kind: 'list' })
+export function ProcedureModule({
+  onCreateContract,
+  onOpenContract,
+  initialProcedureId = null
+}: Props): React.JSX.Element {
+  const [view, setView] = useState<View>(
+    initialProcedureId === null
+      ? { kind: 'list' }
+      : { kind: 'detail', procedureId: initialProcedureId }
+  )
 
   if (view.kind === 'create') {
     return (
