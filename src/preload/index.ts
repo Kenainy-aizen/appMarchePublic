@@ -103,6 +103,8 @@ const api: PrmpApi = {
     ipcRenderer.invoke(IpcChannels.contractableProcedureList) as ReturnType<
       PrmpApi['listContractableProcedures']
     >,
+  getDashboard: () =>
+    ipcRenderer.invoke(IpcChannels.dashboardGet) as ReturnType<PrmpApi['getDashboard']>,
   listAlerts: () => ipcRenderer.invoke(IpcChannels.alertList) as ReturnType<PrmpApi['listAlerts']>,
   saveAlertHorizon: (input) =>
     ipcRenderer.invoke(IpcChannels.settingsSaveAlertHorizon, input) as ReturnType<

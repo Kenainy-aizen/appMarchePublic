@@ -53,6 +53,14 @@ export function WorkspaceScreen({
     void refreshAlerts()
   }, [section, refreshAlerts])
 
+  /** Va à une page par le menu, l'accueil ou un tableau de bord : toute ouverture directe en attente est oubliée. */
+  function navigate(next: SectionId): void {
+    if (next === 'contracts') setContractIntent(null)
+    if (next === 'procedures') setProcedureToOpen(null)
+    if (next === 'ppm') setPpmToOpen(null)
+    setSection(next)
+  }
+
   /** Ouvre l'élément concerné par une alerte. */
   function openAlertTarget(target: AlertDto['target']): void {
     if (target.kind === 'PROCEDURE') {
@@ -90,12 +98,7 @@ export function WorkspaceScreen({
       alertCounts={
         alerts === null ? null : { overdue: alerts.overdueCount, upcoming: alerts.upcomingCount }
       }
-      onNavigate={(next) => {
-        if (next === 'contracts') setContractIntent(null)
-        if (next === 'procedures') setProcedureToOpen(null)
-        if (next === 'ppm') setPpmToOpen(null)
-        setSection(next)
-      }}
+      onNavigate={navigate}
       onSwitchRegion={() => void switchRegion()}
     >
       {error && <Alert tone="error">{error}</Alert>}
@@ -104,7 +107,7 @@ export function WorkspaceScreen({
           regionName={region.name}
           organizationName={organizationName}
           alerts={alerts}
-          onNavigate={setSection}
+          onNavigate={navigate}
         />
       )}
       {section === 'alerts' && (

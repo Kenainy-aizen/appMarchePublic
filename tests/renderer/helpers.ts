@@ -66,6 +66,34 @@ export function installApiMock(): ApiMock {
     listContractableProcedures: vi
       .fn<PrmpApi['listContractableProcedures']>()
       .mockResolvedValue(ok([])),
+    getDashboard: vi.fn<PrmpApi['getDashboard']>().mockResolvedValue(
+      ok({
+        plans: [],
+        procedures: {
+          total: 0,
+          notStarted: 0,
+          inProgress: 0,
+          completed: 0,
+          awarded: 0,
+          byMethod: []
+        },
+        contracts: {
+          total: 0,
+          byStatus: {
+            NOT_STARTED: 0,
+            IN_PROGRESS: 0,
+            STOPPED: 0,
+            PROVISIONALLY_RECEIVED: 0,
+            FINALLY_RECEIVED: 0,
+            CLOSED: 0
+          },
+          initialAmount: 0,
+          amendmentsAmount: 0,
+          currentAmount: 0
+        },
+        candidates: { total: 0, bids: 0, awardedBids: 0 }
+      })
+    ),
     listAlerts: vi
       .fn<PrmpApi['listAlerts']>()
       .mockResolvedValue(

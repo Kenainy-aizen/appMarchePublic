@@ -337,3 +337,11 @@ export function setAwardedBid(procedure: Procedure, bidId: string | null): Proce
     bids: procedure.bids.map((bid) => ({ ...bid, awarded: bid.id === bidId }))
   }
 }
+
+/** Attribution validée (donc une offre retenue) : la procédure peut déboucher sur un marché. */
+export function isProcedureAwarded(procedure: Procedure): boolean {
+  return (
+    findStep(procedure, 'ATTRIBUTION').validatedOn !== null &&
+    procedure.bids.some((bid) => bid.awarded)
+  )
+}

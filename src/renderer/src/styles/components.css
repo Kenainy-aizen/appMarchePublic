@@ -574,3 +574,46 @@ tbody tr.is-overdue {
 tbody tr.is-overdue td:first-child strong {
   color: var(--laterite-dark);
 }
+
+/* ---------- Tableau de bord ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.stat {
+  padding: 0.875rem 1rem;
+  background: var(--forest-50);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 8px);
+}
+
+.stat__value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__label {
+  margin-top: 0.125rem;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.bar {
+  height: 0.5rem;
+  margin-top: 0.375rem;
+  overflow: hidden;
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--forest-600);
+}

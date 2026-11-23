@@ -286,3 +286,22 @@ Une entrée par décision technique : contexte, choix, alternatives, conséquenc
 - Affichage : entrée « Alertes » du menu avec pastille (rouge s'il y a un retard), résumé sur l'accueil à l'ouverture de la région, page dédiée avec lien « Ouvrir » vers la procédure, le marché ou le plan concerné.
 - Non couvert : dates d'exécution de marché prévues (le modèle n'en a pas), échéances de garantie ou de validité d'offre, rappels répétés ou « mettre en sourdine » une alerte.
 - Aucune migration de base : rien n'est stocké.
+
+## ADR-032 — Tableau de bord de la région (hypothèses à confirmer avec la PRMP)
+
+- Statut : proposé, à confirmer (2026-11-23).
+- Principe : les indicateurs sont **calculés à chaque affichage** à partir des données de la région, **jamais enregistrés** (comme les alertes). Ils s'affichent sur la page d'accueil, sous la situation des plans et le résumé des échéances ; un bloc sans donnée n'est pas affiché.
+- Périmètre : **toute la région, sans filtre par année ni par période**. Chaque plan est présenté séparément (avec son année), les autres indicateurs portent sur l'ensemble. Un filtre par exercice reste à décider avec la PRMP (une procédure ou un contrat ne porte pas d'année propre : il faudrait fixer la règle de rattachement).
+- Indicateurs :
+  1. **Réalisation du plan**, par plan : lignes lancées sur lignes prévues (avec pourcentage), montant prévu, montant contractualisé.
+  2. **Procédures** : total, non démarrées, en cours, terminées, attribuées ; par mode de passation (nombre et montant estimé, seulement les modes utilisés).
+  3. **Contrats** : total, montant initial, variation des avenants (positive ou négative), montant actuel ; nombre par situation d'exécution (seulement les situations non vides).
+  4. **Candidats et offres** : candidats, offres reçues, offres retenues.
+- Règles de calcul :
+  - une ligne du plan est **lancée** si au moins une procédure ou un contrat s'y rattache ; le rattachement d'un contrat est le sien, à défaut celui de sa procédure d'origine ; une ligne reliée à une procédure et à un contrat n'est comptée qu'une fois ;
+  - le **montant contractualisé** est le montant actuel (avenants compris) des contrats rattachés aux lignes du plan ; un contrat sans ligne n'est compté dans aucun plan, mais l'est dans le bloc Contrats ;
+  - « attribuée » = attribution validée avec une offre retenue (même règle que pour créer un marché) ;
+  - une procédure sans montant estimé compte pour 0 dans les montants estimés ;
+  - le pourcentage est arrondi à l'entier le plus proche, et vaut 0 pour un plan sans ligne ; il est calculé une seule fois (domaine), l'interface se contente de l'afficher.
+- Non couvert : graphiques, comparaison entre années ou entre régions (les régions sont cloisonnées), taux d'exécution financier, export (Phase 11).
+- Aucune migration de base : rien n'est stocké.

@@ -199,6 +199,53 @@ export interface ExportResultDto {
   readonly saved: boolean
 }
 
+/** Avancement d'un plan de passation. */
+export interface PlanProgressDto {
+  readonly planId: string
+  readonly year: number
+  readonly number: number
+  readonly lineCount: number
+  /** Lignes ayant donné lieu à au moins une procédure ou un contrat. */
+  readonly launchedLineCount: number
+  /** Part des lignes lancées, de 0 à 100. */
+  readonly launchRatePercent: number
+  readonly plannedAmount: number
+  /** Montant actuel (avenants compris) des contrats rattachés aux lignes de ce plan. */
+  readonly contractedAmount: number
+}
+
+export interface MethodFiguresDto {
+  readonly method: string
+  readonly count: number
+  readonly estimatedAmount: number
+}
+
+/** Indicateurs de la région, recalculés à chaque appel (jamais enregistrés). */
+export interface DashboardDto {
+  readonly plans: readonly PlanProgressDto[]
+  readonly procedures: {
+    readonly total: number
+    readonly notStarted: number
+    readonly inProgress: number
+    readonly completed: number
+    readonly awarded: number
+    readonly byMethod: readonly MethodFiguresDto[]
+  }
+  readonly contracts: {
+    readonly total: number
+    /** Nombre de contrats par situation (NOT_STARTED, IN_PROGRESS, STOPPED, PROVISIONALLY_RECEIVED, FINALLY_RECEIVED, CLOSED). */
+    readonly byStatus: Readonly<Record<string, number>>
+    readonly initialAmount: number
+    readonly amendmentsAmount: number
+    readonly currentAmount: number
+  }
+  readonly candidates: {
+    readonly total: number
+    readonly bids: number
+    readonly awardedBids: number
+  }
+}
+
 /** Une échéance à surveiller. Les alertes sont recalculées à chaque appel, jamais enregistrées. */
 export interface AlertDto {
   readonly key: string
@@ -342,6 +389,7 @@ export interface PrmpApi {
   addContractEvent(input: AddContractEventInputDto): Promise<ApiResult<ContractDetailDto>>
   removeLastContractEvent(input: ContractIdInputDto): Promise<ApiResult<ContractDetailDto>>
   listContractableProcedures(): Promise<ApiResult<readonly ContractableProcedureDto[]>>
+  getDashboard(): Promise<ApiResult<DashboardDto>>
   listAlerts(): Promise<ApiResult<AlertsDto>>
   saveAlertHorizon(input: SaveAlertHorizonInputDto): Promise<ApiResult<AlertHorizonDto>>
   listAttachments(input: AttachmentOwnerInputDto): Promise<ApiResult<readonly AttachmentDto[]>>
