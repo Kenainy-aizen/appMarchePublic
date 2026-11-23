@@ -1,7 +1,12 @@
 import type { Candidate } from '@domain/candidate'
 import type { Contract } from '@domain/contract'
 import type { Ppm } from '@domain/ppm'
-import { bidsLocked, findStep, type Procedure, procedureProgress } from '@domain/procedure'
+import {
+  bidsLocked,
+  isProcedureAwarded,
+  type Procedure,
+  procedureProgress
+} from '@domain/procedure'
 
 export interface ProcedureSummaryView {
   readonly id: string
@@ -94,13 +99,7 @@ export function listLineChoices(ppms: readonly Ppm[]): PpmLineChoiceView[] {
   )
 }
 
-/** Attribution validée (donc une offre retenue) : la procédure peut déboucher sur un marché. */
-export function isAwarded(procedure: Procedure): boolean {
-  return (
-    findStep(procedure, 'ATTRIBUTION').validatedOn !== null &&
-    procedure.bids.some((bid) => bid.awarded)
-  )
-}
+export const isAwarded = isProcedureAwarded
 
 export function toDetailView(
   procedure: Procedure,

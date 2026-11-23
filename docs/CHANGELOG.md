@@ -2,6 +2,15 @@
 
 ## [Non publié]
 
+### Phase 10 — Tableau de bord (2026-11-23)
+
+- Domaine : indicateurs de la région calculés à l'affichage (réalisation du plan, procédures par situation et par mode, contrats par situation avec montants et avenants, candidats et offres) ; la règle « procédure attribuée » devient commune (ADR-032).
+- Application : 1 cas d'utilisation de lecture ; 1 canal IPC `dashboard:get`.
+- Interface : l'accueil affiche, sous la situation des plans, les blocs Réalisation du plan (avec barres), Procédures, Contrats, Candidats et offres ; chaque bloc mène à son module ; un bloc sans donnée n'est pas affiché.
+- Correction : les boutons de l'accueil (et du tableau de bord) rouvraient un contrat, une procédure ou un plan ouvert plus tôt depuis une alerte, au lieu de la liste ; la navigation est unifiée.
+- Tests : 680 tests ; e2e 192 vérifications ; 9 mutations détectées. Capture : docs/captures/16.
+- Aucune migration de base.
+
 ### Phase 9 — Alertes d'échéances (2026-11-21)
 
 - Domaine : calcul pur des échéances (étapes de procédure, lancements prévus du plan, marchés non démarrés), classées en retard / à venir (ADR-031) ; utilitaires de dates.

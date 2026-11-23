@@ -1247,6 +1247,77 @@ try {
   )
   await evaluate('window.api.saveAlertHorizon({days:15})')
 
+  // 2h. Tableau de bord : indicateurs exacts du jeu de données (calculés à l'affichage)
+  const dash = await evaluate('window.api.getDashboard()')
+  const d = dash.ok ? dash.value : null
+  check(
+    'API : réalisation du plan — 2 lignes dont 1 lancée, 1 751 000 Ar prévus, 950 000 Ar contractualisés',
+    d !== null &&
+      d.plans.length === 1 &&
+      d.plans[0].lineCount === 2 &&
+      d.plans[0].launchedLineCount === 1 &&
+      d.plans[0].plannedAmount === 1751000 &&
+      d.plans[0].contractedAmount === 950000,
+    JSON.stringify(d ? d.plans : dash.error)
+  )
+  check(
+    'API : procédures — 3 (1 non démarrée, 2 en cours, 2 attribuées), par mode DAO, AOR, DCP',
+    d !== null &&
+      d.procedures.total === 3 &&
+      d.procedures.notStarted === 1 &&
+      d.procedures.inProgress === 2 &&
+      d.procedures.completed === 0 &&
+      d.procedures.awarded === 2 &&
+      d.procedures.byMethod.map((m) => `${m.method}:${m.count}:${m.estimatedAmount}`).join('|') ===
+        'DAO:1:0|AOR:1:0|DCP:1:1750000',
+    JSON.stringify(d ? d.procedures : dash.error)
+  )
+  check(
+    'API : contrats — 2 (1 clôturé, 1 non démarré), 1 500 000 Ar initiaux, +150 000 Ar d’avenants, 1 650 000 Ar actuels',
+    d !== null &&
+      d.contracts.total === 2 &&
+      d.contracts.byStatus.CLOSED === 1 &&
+      d.contracts.byStatus.NOT_STARTED === 1 &&
+      d.contracts.initialAmount === 1500000 &&
+      d.contracts.amendmentsAmount === 150000 &&
+      d.contracts.currentAmount === 1650000,
+    JSON.stringify(d ? d.contracts : dash.error)
+  )
+  check(
+    'API : 3 candidats, 3 offres reçues, 2 offres retenues',
+    d !== null &&
+      d.candidates.total === 3 &&
+      d.candidates.bids === 3 &&
+      d.candidates.awardedBids === 2,
+    JSON.stringify(d ? d.candidates : dash.error)
+  )
+
+  check('clic « Accueil » (menu)', await clickByText('Accueil'))
+  await waitUntil(pageHas('Réalisation du plan'), 'tableau de bord sur l’accueil')
+  check(
+    'interface : l’accueil affiche la réalisation du plan (1 sur 2, 50 %)',
+    (await evaluate(pageHas('1 sur 2 (50 %)'))) && (await evaluate(pageHas('Plan n° 1')))
+  )
+  check(
+    'interface : les blocs Procédures, Contrats, Candidats et offres sont affichés avec leurs montants',
+    (await evaluate(pageHas('Attribuées'))) &&
+      (await evaluate(pageHas('Montant initial 1 500 000 Ar'))) &&
+      (await evaluate(pageHas('Avenants +150 000 Ar'))) &&
+      (await evaluate(pageHas('Montant actuel 1 650 000 Ar'))) &&
+      (await evaluate(pageHas('Offres retenues')))
+  )
+  const shotDashboard = await send('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: true
+  })
+  writeFileSync(join(outputDir, '9-tableau-de-bord.png'), Buffer.from(shotDashboard.data, 'base64'))
+  check('clic « Voir les contrats »', await clickButton('Voir les contrats'))
+  await waitUntil(
+    pageHas('Marchés, conventions et achats directs'),
+    'module des contrats depuis le tableau de bord'
+  )
+  check('interface : « Voir les contrats » mène au module des contrats', true)
+
   await evaluate('window.api.closeSession()')
   const noRegion = await evaluate('window.api.listPpms()')
   check(

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { AlertsDto, PpmSummaryDto } from '@shared/api'
+import type { AlertsDto, DashboardDto, PpmSummaryDto } from '@shared/api'
 import { messageOf, unwrap } from '../api-errors'
 import { formatAriary, formatDate } from '../format'
 import type { SectionId } from '../layouts/AppShell'
@@ -7,6 +7,7 @@ import { Alert } from '../ui/Alert'
 import { EmptyState } from '../ui/EmptyState'
 import { Icon } from '../ui/Icon'
 import { PageHeader } from '../ui/PageHeader'
+import { DashboardPanels } from './DashboardPanels'
 
 interface Props {
   readonly regionName: string
@@ -24,14 +25,23 @@ export function HomeSection({
   onNavigate
 }: Props): React.JSX.Element {
   const [ppms, setPpms] = useState<readonly PpmSummaryDto[] | null>(null)
+  const [dashboard, setDashboard] = useState<DashboardDto | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const alive = { current: true }
     void (async () => {
       try {
-        const list = unwrap(await window.api.listPpms())
-        if (alive.current) setPpms(list)
+        const [list, indicators] = await Promise.all([
+          window.api.listPpms(),
+          window.api.getDashboard()
+        ])
+        const ppmList = unwrap(list)
+        const dashboardValue = unwrap(indicators)
+        if (alive.current) {
+          setPpms(ppmList)
+          setDashboard(dashboardValue)
+        }
       } catch (failure) {
         if (alive.current) setError(messageOf(failure))
       }
@@ -162,6 +172,8 @@ export function HomeSection({
           </div>
         </section>
       )}
+
+      {dashboard !== null && <DashboardPanels dashboard={dashboard} onNavigate={onNavigate} />}
     </>
   )
 }

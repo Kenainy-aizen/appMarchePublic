@@ -407,3 +407,32 @@ La vue d'ensemble des régions fournit aussi `alertHorizonDays` (comme le nom de
 - Contrôle par mutation : 14 régressions volontaires (limite de l'horizon, jour même, étapes validées, ligne déjà lancée, conventions, délai de 30 jours, ordre du tri, délai inconnu, nom effaçant le délai, délai non validé, pastille, « Demain », ouverture du mauvais module, résumé de l'accueil) sont toutes détectées. Une 15e mutation a révélé une condition morte (procédure terminée), supprimée.
 - Sur de vraies bases : les trois sortes d'alertes avec de vraies dates, recalcul identique après redémarrage, disparition d'une alerte dès que l'échéance est replanifiée, délai partagé entre régions, aucune alerte d'une région dans une autre.
 - Test de bout en bout : 183 vérifications, dont la création de données d'essai relatives à la date du jour, la pastille et le résumé de l'accueil, les groupes de la page, l'ouverture directe d'une procédure et d'un marché depuis une alerte, le changement de délai (60 jours fait apparaître une échéance à 40 jours) et le contenu de `settings.json`.
+
+## 17. Phase 10 — Tableau de bord
+
+### Fichiers
+
+    src/domain/dashboard.ts                           computeDashboard (calcul pur), launchRate
+    src/domain/procedure.ts                           + isProcedureAwarded (règle partagée avec la création d'un marché)
+    src/application/dashboard/get-dashboard.ts        GetDashboardUseCase (lecture seule)
+    src/main/ipc/register-dashboard-handlers.ts       1 canal : dashboard:get
+    src/renderer/src/screens/DashboardPanels.tsx      blocs d'indicateurs ; HomeSection les affiche sous les plans
+
+### Canal IPC
+
+| Canal         | Entrée | Résultat                                                            |
+| ------------- | ------ | ------------------------------------------------------------------- |
+| dashboard:get | —      | plans, procédures, contrats, candidats (région ouverte obligatoire) |
+
+### Où vit chaque règle
+
+- Domaine : tous les calculs (lignes lancées, montants contractualisés, attribuées, avenants, pourcentage). L'interface n'a aucune règle de calcul : elle affiche.
+- Application : lecture des données de la région ; rien n'est stocké.
+- Interface : n'affiche que les blocs non vides et les situations de contrat non nulles ; chaque bloc mène au module concerné.
+
+### Garanties vérifiées par des tests
+
+- Contrôle par mutation : 9 régressions volontaires (contrat non compté comme ligne lancée, rattachement par la procédure, avenants ignorés, « attribuée » trop large, signe des avenants, modes à zéro, arrondi, signe perdu dans l'interface, situations vides listées) sont toutes détectées.
+- Sur une vraie base chiffrée : indicateurs exacts d'un jeu de données de référence, identiques après redémarrage, jamais ceux d'une autre région.
+- Test de bout en bout : 192 vérifications, dont les chiffres exacts des quatre blocs côté API et leur affichage sur l'accueil.
+- Bogue trouvé pendant le test de bout en bout et corrigé : les boutons « Voir les … » de l'accueil contournaient la remise à zéro des ouvertures directes (une alerte ouverte plus tôt rouvrait le même contrat au lieu de la liste). La navigation de l'accueil et celle du menu passent maintenant par la même fonction ; un test de non-régression a été vérifié en réintroduisant le bogue.
